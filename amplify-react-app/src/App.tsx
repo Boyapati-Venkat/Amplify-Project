@@ -1,12 +1,8 @@
 import React from 'react';
 import { Authenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import FileUpload from './components/FileUpload';
 import DataViewer from './components/DataViewer';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, Database, User, LogOut } from 'lucide-react';
 
 const App = () => {
@@ -14,8 +10,6 @@ const App = () => {
     <Authenticator hideSignUp={false}>
       {({ signOut, user }) => (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-          <Toaster />
-          <Sonner />
           
           {/* Header */}
           <header className="bg-white shadow-sm border-b">
@@ -42,15 +36,13 @@ const App = () => {
                       Welcome, {user?.username || 'User'}
                     </span>
                   </div>
-                  <Button 
+                  <button 
                     onClick={signOut}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center space-x-2"
+                    className="inline-flex items-center space-x-2 px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50"
                   >
                     <LogOut className="h-4 w-4" />
                     <span>Sign Out</span>
-                  </Button>
+                  </button>
                 </div>
               </div>
             </div>
@@ -60,48 +52,48 @@ const App = () => {
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* File Upload Section */}
-              <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader className="pb-4">
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg border-0 overflow-hidden">
+                <div className="px-6 py-4 border-b">
                   <div className="flex items-center space-x-3">
                     <div className="bg-green-100 p-2 rounded-lg">
                       <Upload className="h-5 w-5 text-green-600" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl text-gray-900">
+                      <h3 className="text-xl font-semibold text-gray-900">
                         File Upload
-                      </CardTitle>
-                      <CardDescription>
+                      </h3>
+                      <p className="text-sm text-gray-500">
                         Upload CSV files to your private S3 bucket
-                      </CardDescription>
+                      </p>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
+                </div>
+                <div className="p-6">
                   <FileUpload userId={user?.username || ''} />
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
               {/* Data Viewer Section */}
-              <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader className="pb-4">
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg border-0 overflow-hidden">
+                <div className="px-6 py-4 border-b">
                   <div className="flex items-center space-x-3">
                     <div className="bg-blue-100 p-2 rounded-lg">
                       <Database className="h-5 w-5 text-blue-600" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl text-gray-900">
+                      <h3 className="text-xl font-semibold text-gray-900">
                         Your Records
-                      </CardTitle>
-                      <CardDescription>
+                      </h3>
+                      <p className="text-sm text-gray-500">
                         View data from DynamoDB via GraphQL
-                      </CardDescription>
+                      </p>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
+                </div>
+                <div className="p-6">
                   <DataViewer userId={user?.username || ''} />
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
           </main>
         </div>
