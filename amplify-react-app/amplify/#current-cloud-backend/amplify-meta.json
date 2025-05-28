@@ -48,12 +48,11 @@
       },
       "providerPlugin": "awscloudformation",
       "service": "AppSync",
-      "lastPushTimeStamp": "2025-05-28T22:21:25.736Z",
+      "lastPushTimeStamp": "2025-05-28T23:02:42.275Z",
       "providerMetadata": {
         "s3TemplateURL": "https://s3.amazonaws.com/amplify-amplifyreactapp-dev-baf7c-deployment/amplify-cfn-templates/api/cloudformation-template.json",
         "logicalId": "apiplanapi"
-      },
-      "lastPushDirHash": "fSbMn5xNhQpvxZJZyVlF4E0vxTQ="
+      }
     }
   },
   "auth": {
@@ -66,8 +65,8 @@
           "SMS"
         ],
         "passwordProtectionSettings": {
-          "passwordPolicyCharacters": [],
-          "passwordPolicyMinLength": 8
+          "passwordPolicyMinLength": 8,
+          "passwordPolicyCharacters": []
         },
         "signupAttributes": [
           "EMAIL"
@@ -91,12 +90,28 @@
         "IdentityPoolName": "amplifyreactappd7c0f353_identitypool_d7c0f353__dev",
         "UserPoolName": "amplifyreactappd7c0f353_userpool_d7c0f353"
       },
-      "lastPushTimeStamp": "2025-05-28T22:21:25.736Z",
+      "lastPushTimeStamp": "2025-05-28T23:02:42.280Z",
       "providerMetadata": {
         "s3TemplateURL": "https://s3.amazonaws.com/amplify-amplifyreactapp-dev-baf7c-deployment/amplify-cfn-templates/auth/amplifyreactappd7c0f353-cloudformation-template.json",
         "logicalId": "authamplifyreactappd7c0f353"
+      }
+    }
+  },
+  "storage": {
+    "plan": {
+      "service": "S3",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [],
+      "lastPushTimeStamp": "2025-05-28T23:02:43.954Z",
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-amplifyreactapp-dev-baf7c-deployment/amplify-cfn-templates/storage/cloudformation-template.json",
+        "logicalId": "storageplan"
       },
-      "lastPushDirHash": "DM1z+Km0cUCkY6XpRJd0DrUaYME="
+      "output": {
+        "BucketName": "migrationplan-bucketbaf7c-dev",
+        "Region": "us-east-1"
+      },
+      "lastPushDirHash": "dElWGSbE146MPM+JLEBZgw5xcWM="
     }
   }
 }

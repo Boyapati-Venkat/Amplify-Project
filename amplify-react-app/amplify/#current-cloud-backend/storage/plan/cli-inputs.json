@@ -1,0 +1,14 @@
+{
+  "resourceName": "plan",
+  "policyUUID": "79ec5792",
+  "bucketName": "migrationplan-bucket",
+  "storageAccess": "auth",
+  "guestAccess": [],
+  "authAccess": [
+    "CREATE_AND_UPDATE",
+    "READ",
+    "DELETE"
+  ],
+  "triggerFunction": "NONE",
+  "groupAccess": {}
+}

@@ -52,6 +52,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ userId }) => {
       const fileName = `uploads/${userId}/${timestamp}_${file.name}`;
       
       // Upload to S3 using Amplify Storage
+      console.log('Uploading to S3 bucket: migrationplan-bucket');
       const result = await uploadData({
         key: fileName,
         data: file,
