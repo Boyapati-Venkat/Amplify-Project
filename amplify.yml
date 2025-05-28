@@ -1,0 +1,17 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - cd amplify-react-app
+        - npm install
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: amplify-react-app/build
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - amplify-react-app/node_modules/**/*
