@@ -1,10 +1,9 @@
 import React from 'react';
-import { Amplify } from 'aws-amplify';
 import { Authenticator } from '@aws-amplify/ui-react';
-import awsconfig from './aws-exports';
 import '@aws-amplify/ui-react/styles.css';
 
-Amplify.configure(awsconfig);
+import FileUpload from './components/FileUpload';
+import DataViewer from './components/DataViewer';
 
 function App() {
   return (
@@ -26,13 +25,17 @@ function App() {
             <h2 style={{ color: '#34495e', fontSize: '1.5rem' }}>
               Hello {user.username}, welcome!
             </h2>
+
+            <FileUpload />
+            <DataViewer />
+
             <button
               onClick={signOut}
               style={{
-                marginTop: '1rem',
+                marginTop: '2rem',
                 padding: '0.5rem 1rem',
                 fontSize: '1rem',
-                backgroundColor: '#2980b9',
+                backgroundColor: '#c0392b',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '4px',
