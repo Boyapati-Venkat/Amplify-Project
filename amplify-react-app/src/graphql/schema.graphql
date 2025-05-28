@@ -1,0 +1,32 @@
+
+# This is the GraphQL schema for your Amplify API
+# Use this when running: amplify add api
+
+type TransformedRecord @model @auth(rules: [{ allow: owner }]) {
+  id: ID!
+  userId: String!
+  name: String
+  email: String
+  score: Int
+  createdAt: AWSDateTime
+}
+
+# Additional types can be added here as needed
+# Example for future enhancements:
+# 
+# type FileUpload @model @auth(rules: [{ allow: owner }]) {
+#   id: ID!
+#   userId: String!
+#   fileName: String!
+#   fileSize: Int
+#   s3Key: String!
+#   status: FileStatus
+#   uploadedAt: AWSDateTime
+# }
+# 
+# enum FileStatus {
+#   PENDING
+#   PROCESSING
+#   COMPLETED
+#   FAILED
+# }

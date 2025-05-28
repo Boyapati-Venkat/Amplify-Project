@@ -1,0 +1,13 @@
+{
+    "AppSyncApiName": "planapi",
+    "DynamoDBBillingMode": "PAY_PER_REQUEST",
+    "DynamoDBEnableServerSideEncryption": false,
+    "AuthCognitoUserPoolId": {
+        "Fn::GetAtt": [
+            "authamplifyreactappd7c0f353",
+            "Outputs.UserPoolId"
+        ]
+    },
+    "S3DeploymentBucket": "amplify-amplifyreactapp-dev-baf7c-deployment",
+    "S3DeploymentRootKey": "amplify-appsync-files/892558029e55baff4ca2a9f63e5ad7cd2d3799b2"
+}
