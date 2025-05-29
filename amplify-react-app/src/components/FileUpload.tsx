@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { uploadData } from 'aws-amplify/storage';
+import { Amplify } from 'aws-amplify';
+import * as StorageModule from 'aws-amplify/storage';
+import awsExports from '../aws-exports';
 
 interface FileUploadProps {
   userId: string;
@@ -36,42 +38,29 @@ const FileUpload: React.FC<FileUploadProps> = ({ userId }) => {
     try {
       console.log('Starting upload for user:', userId);
       
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return prev;
-          }
-          return prev + 10;
-        });
-      }, 200);
-
       // Generate unique filename with timestamp
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const fileName = `uploads/${userId}/${timestamp}_${file.name}`;
       
-      // Upload to S3 using Amplify Storage
-      console.log('Uploading to S3 bucket: migrationplan-bucket');
-      const result = await uploadData({
+      console.log('Uploading to bucket:', awsExports.aws_user_files_s3_bucket);
+      
+      // Use uploadData from aws-amplify/storage
+      const result = await StorageModule.uploadData({
         key: fileName,
         data: file,
         options: {
-          accessLevel: 'public',
           contentType: file.type,
           onProgress: ({ transferredBytes, totalBytes }) => {
             if (totalBytes) {
               const percentage = Math.round((transferredBytes / totalBytes) * 100);
               setProgress(percentage);
-              console.log('Upload progress:', percentage + '%');
+              console.log(`Uploaded: ${transferredBytes}/${totalBytes} (${percentage}%)`);
             }
           },
         }
       });
 
-      clearInterval(progressInterval);
       setProgress(100);
-
       console.log('Upload successful:', result);
       setMessage('✅ Upload successful!');
 
@@ -184,7 +173,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ userId }) => {
       </button>
 
       <div className="text-xs text-gray-500 space-y-1">
-        <p>• Files are stored in your S3 bucket</p>
+        <p>• Files are stored in your S3 bucket: {awsExports.aws_user_files_s3_bucket}</p>
         <p>• CSV files are automatically processed</p>
       </div>
     </div>

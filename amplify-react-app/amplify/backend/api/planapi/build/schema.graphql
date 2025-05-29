@@ -1,9 +1,12 @@
-type Todo @aws_api_key {
+type TransformedRecord @aws_api_key @aws_cognito_user_pools {
   id: ID!
-  name: String!
-  description: String
-  createdAt: AWSDateTime!
+  userId: String!
+  name: String
+  email: String
+  score: Int
+  createdAt: AWSDateTime
   updatedAt: AWSDateTime!
+  owner: String
 }
 
 input ModelStringInput {
@@ -156,71 +159,86 @@ enum ModelSortDirection {
   DESC
 }
 
-type ModelTodoConnection @aws_api_key {
-  items: [Todo]!
+type ModelTransformedRecordConnection @aws_api_key @aws_cognito_user_pools {
+  items: [TransformedRecord]!
   nextToken: String
 }
 
-input ModelTodoFilterInput {
+input ModelTransformedRecordFilterInput {
   id: ModelIDInput
+  userId: ModelStringInput
   name: ModelStringInput
-  description: ModelStringInput
+  email: ModelStringInput
+  score: ModelIntInput
   createdAt: ModelStringInput
   updatedAt: ModelStringInput
-  and: [ModelTodoFilterInput]
-  or: [ModelTodoFilterInput]
-  not: ModelTodoFilterInput
+  and: [ModelTransformedRecordFilterInput]
+  or: [ModelTransformedRecordFilterInput]
+  not: ModelTransformedRecordFilterInput
+  owner: ModelStringInput
 }
 
 type Query {
-  getTodo(id: ID!): Todo @aws_api_key
-  listTodos(filter: ModelTodoFilterInput, limit: Int, nextToken: String): ModelTodoConnection @aws_api_key
+  getTransformedRecord(id: ID!): TransformedRecord @aws_api_key @aws_cognito_user_pools
+  listTransformedRecords(filter: ModelTransformedRecordFilterInput, limit: Int, nextToken: String): ModelTransformedRecordConnection @aws_api_key @aws_cognito_user_pools
 }
 
-input ModelTodoConditionInput {
+input ModelTransformedRecordConditionInput {
+  userId: ModelStringInput
   name: ModelStringInput
-  description: ModelStringInput
-  and: [ModelTodoConditionInput]
-  or: [ModelTodoConditionInput]
-  not: ModelTodoConditionInput
+  email: ModelStringInput
+  score: ModelIntInput
   createdAt: ModelStringInput
+  and: [ModelTransformedRecordConditionInput]
+  or: [ModelTransformedRecordConditionInput]
+  not: ModelTransformedRecordConditionInput
   updatedAt: ModelStringInput
+  owner: ModelStringInput
 }
 
-input CreateTodoInput {
+input CreateTransformedRecordInput {
   id: ID
-  name: String!
-  description: String
-}
-
-input UpdateTodoInput {
-  id: ID!
+  userId: String!
   name: String
-  description: String
+  email: String
+  score: Int
+  createdAt: AWSDateTime
 }
 
-input DeleteTodoInput {
+input UpdateTransformedRecordInput {
+  id: ID!
+  userId: String
+  name: String
+  email: String
+  score: Int
+  createdAt: AWSDateTime
+}
+
+input DeleteTransformedRecordInput {
   id: ID!
 }
 
 type Mutation {
-  createTodo(input: CreateTodoInput!, condition: ModelTodoConditionInput): Todo @aws_api_key
-  updateTodo(input: UpdateTodoInput!, condition: ModelTodoConditionInput): Todo @aws_api_key
-  deleteTodo(input: DeleteTodoInput!, condition: ModelTodoConditionInput): Todo @aws_api_key
+  createTransformedRecord(input: CreateTransformedRecordInput!, condition: ModelTransformedRecordConditionInput): TransformedRecord
+  updateTransformedRecord(input: UpdateTransformedRecordInput!, condition: ModelTransformedRecordConditionInput): TransformedRecord
+  deleteTransformedRecord(input: DeleteTransformedRecordInput!, condition: ModelTransformedRecordConditionInput): TransformedRecord
 }
 
-input ModelSubscriptionTodoFilterInput {
+input ModelSubscriptionTransformedRecordFilterInput {
   id: ModelSubscriptionIDInput
+  userId: ModelSubscriptionStringInput
   name: ModelSubscriptionStringInput
-  description: ModelSubscriptionStringInput
+  email: ModelSubscriptionStringInput
+  score: ModelSubscriptionIntInput
   createdAt: ModelSubscriptionStringInput
   updatedAt: ModelSubscriptionStringInput
-  and: [ModelSubscriptionTodoFilterInput]
-  or: [ModelSubscriptionTodoFilterInput]
+  and: [ModelSubscriptionTransformedRecordFilterInput]
+  or: [ModelSubscriptionTransformedRecordFilterInput]
+  owner: ModelStringInput
 }
 
 type Subscription {
-  onCreateTodo(filter: ModelSubscriptionTodoFilterInput): Todo @aws_subscribe(mutations: ["createTodo"]) @aws_api_key
-  onUpdateTodo(filter: ModelSubscriptionTodoFilterInput): Todo @aws_subscribe(mutations: ["updateTodo"]) @aws_api_key
-  onDeleteTodo(filter: ModelSubscriptionTodoFilterInput): Todo @aws_subscribe(mutations: ["deleteTodo"]) @aws_api_key
+  onCreateTransformedRecord(filter: ModelSubscriptionTransformedRecordFilterInput, owner: String): TransformedRecord @aws_subscribe(mutations: ["createTransformedRecord"]) @aws_api_key @aws_cognito_user_pools
+  onUpdateTransformedRecord(filter: ModelSubscriptionTransformedRecordFilterInput, owner: String): TransformedRecord @aws_subscribe(mutations: ["updateTransformedRecord"]) @aws_api_key @aws_cognito_user_pools
+  onDeleteTransformedRecord(filter: ModelSubscriptionTransformedRecordFilterInput, owner: String): TransformedRecord @aws_subscribe(mutations: ["deleteTransformedRecord"]) @aws_api_key @aws_cognito_user_pools
 }

@@ -128,7 +128,7 @@
             "ApiId"
           ]
         },
-        "Expires": 1749064532
+        "Expires": 1749111395
       }
     },
     "GraphQLAPINONEDS95A13CF0": {
@@ -145,7 +145,7 @@
         "Type": "NONE"
       }
     },
-    "Todo": {
+    "TransformedRecord": {
       "Type": "AWS::CloudFormation::Stack",
       "Properties": {
         "Parameters": {
@@ -206,7 +206,7 @@
               {
                 "Ref": "S3DeploymentRootKey"
               },
-              "/stacks/Todo.json"
+              "/stacks/TransformedRecord.json"
             ]
           ]
         }
@@ -258,7 +258,7 @@
       "DependsOn": [
         "GraphQLAPI",
         "GraphQLAPITransformerSchema3CB2AE18",
-        "Todo"
+        "TransformedRecord"
       ]
     }
   },

@@ -27,12 +27,12 @@
         "authConfig": {
           "additionalAuthenticationProviders": [
             {
+              "authenticationType": "API_KEY",
               "apiKeyConfig": {
-                "apiKeyExpirationDate": "2025-06-04T18:59:16.376Z",
                 "apiKeyExpirationDays": 7,
+                "apiKeyExpirationDate": "2025-06-04T18:59:16.376Z",
                 "description": ""
-              },
-              "authenticationType": "API_KEY"
+              }
             }
           ],
           "defaultAuthentication": {
@@ -48,11 +48,12 @@
       },
       "providerPlugin": "awscloudformation",
       "service": "AppSync",
-      "lastPushTimeStamp": "2025-05-28T23:07:27.327Z",
+      "lastPushTimeStamp": "2025-05-29T08:18:21.788Z",
       "providerMetadata": {
         "s3TemplateURL": "https://s3.amazonaws.com/amplify-amplifyreactapp-dev-baf7c-deployment/amplify-cfn-templates/api/cloudformation-template.json",
         "logicalId": "apiplanapi"
-      }
+      },
+      "lastPushDirHash": "LJBxNI7xblk2Tn5Ys5Rni1CXv4k="
     }
   },
   "auth": {
@@ -90,7 +91,7 @@
         "IdentityPoolName": "amplifyreactappd7c0f353_identitypool_d7c0f353__dev",
         "UserPoolName": "amplifyreactappd7c0f353_userpool_d7c0f353"
       },
-      "lastPushTimeStamp": "2025-05-28T23:07:27.330Z",
+      "lastPushTimeStamp": "2025-05-29T08:18:20.230Z",
       "providerMetadata": {
         "s3TemplateURL": "https://s3.amazonaws.com/amplify-amplifyreactapp-dev-baf7c-deployment/amplify-cfn-templates/auth/amplifyreactappd7c0f353-cloudformation-template.json",
         "logicalId": "authamplifyreactappd7c0f353"
@@ -102,7 +103,7 @@
       "service": "S3",
       "providerPlugin": "awscloudformation",
       "dependsOn": [],
-      "lastPushTimeStamp": "2025-05-28T23:07:29.541Z",
+      "lastPushTimeStamp": "2025-05-29T08:18:20.231Z",
       "providerMetadata": {
         "s3TemplateURL": "https://s3.amazonaws.com/amplify-amplifyreactapp-dev-baf7c-deployment/amplify-cfn-templates/storage/cloudformation-template.json",
         "logicalId": "storageplan"
