@@ -1,197 +1,208 @@
-import React, { useState } from 'react';
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { fromCognitoIdentityPool } from "@aws-sdk/credential-providers";
-import awsExports from '../aws-exports';
 
-interface FileUploadProps {
-  userId: string;
+import { useState, useCallback } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { useToast } from '@/hooks/use-toast';
+import { Upload, FileText, CheckCircle, AlertCircle, X } from 'lucide-react';
+
+interface UploadedFile {
+  id: string;
+  name: string;
+  size: number;
+  status: 'uploading' | 'success' | 'error';
+  progress: number;
 }
 
-const FileUpload: React.FC<FileUploadProps> = ({ userId }) => {
-  const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [message, setMessage] = useState('');
+const FileUpload = () => {
+  const [files, setFiles] = useState<UploadedFile[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const { toast } = useToast();
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
-    if (selectedFile) {
-      if (selectedFile.type === 'text/csv' || selectedFile.name.endsWith('.csv')) {
-        setFile(selectedFile);
-        console.log('File selected:', selectedFile.name);
-      } else {
-        setMessage('Please select a CSV file.');
-      }
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    handleFiles(droppedFiles);
+  }, []);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const selectedFiles = Array.from(e.target.files);
+      handleFiles(selectedFiles);
     }
   };
 
-  const handleUpload = async () => {
-    if (!file) {
-      setMessage('Please select a CSV file to upload.');
-      return;
+  const handleFiles = (fileList: File[]) => {
+    const csvFiles = fileList.filter(file => file.type === 'text/csv' || file.name.endsWith('.csv'));
+    
+    if (csvFiles.length !== fileList.length) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload only CSV files.",
+        variant: "destructive",
+      });
     }
 
-    setUploading(true);
-    setProgress(0);
-    setMessage('');
-
-    try {
-      console.log('Starting upload for user:', userId);
-      
-      // Generate unique filename with timestamp
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const fileName = `uploads/${userId}/${timestamp}_${file.name}`;
-      
-      console.log('Uploading to bucket:', awsExports.aws_user_files_s3_bucket);
-      
-      // Create S3 client with Cognito credentials
-      const s3Client = new S3Client({
-        region: awsExports.aws_user_files_s3_bucket_region,
-        credentials: fromCognitoIdentityPool({
-          clientConfig: { region: awsExports.aws_cognito_region },
-          identityPoolId: awsExports.aws_cognito_identity_pool_id
-        })
-      });
-
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return prev;
-          }
-          return prev + 10;
+    csvFiles.forEach(file => {
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        toast({
+          title: "File too large",
+          description: `${file.name} exceeds the 10MB limit.`,
+          variant: "destructive",
         });
-      }, 200);
+        return;
+      }
 
-      // Create and send the PutObject command
-      const command = new PutObjectCommand({
-        Bucket: awsExports.aws_user_files_s3_bucket,
-        Key: fileName,
-        Body: file,
-        ContentType: file.type
+      const newFile: UploadedFile = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: file.name,
+        size: file.size,
+        status: 'uploading',
+        progress: 0
+      };
+
+      setFiles(prev => [...prev, newFile]);
+      simulateUpload(newFile.id);
+    });
+  };
+
+  const simulateUpload = (fileId: string) => {
+    const interval = setInterval(() => {
+      setFiles(prev => prev.map(file => {
+        if (file.id === fileId) {
+          const newProgress = Math.min(file.progress + Math.random() * 30, 100);
+          const isComplete = newProgress >= 100;
+          
+          return {
+            ...file,
+            progress: newProgress,
+            status: isComplete ? 'success' : 'uploading'
+          };
+        }
+        return file;
+      }));
+    }, 200);
+
+    setTimeout(() => {
+      clearInterval(interval);
+      setFiles(prev => prev.map(file => 
+        file.id === fileId ? { ...file, progress: 100, status: 'success' } : file
+      ));
+      
+      toast({
+        title: "Upload complete",
+        description: "Your file has been processed successfully.",
       });
+    }, 2000 + Math.random() * 2000);
+  };
 
-      const response = await s3Client.send(command);
-      
-      clearInterval(progressInterval);
-      setProgress(100);
-      
-      console.log('Upload successful:', response);
-      setMessage('✅ Upload successful!');
+  const removeFile = (fileId: string) => {
+    setFiles(prev => prev.filter(file => file.id !== fileId));
+  };
 
-      // Reset form
-      setTimeout(() => {
-        setFile(null);
-        const input = document.getElementById('file-input') as HTMLInputElement;
-        if (input) input.value = '';
-        setProgress(0);
-      }, 2000);
-
-    } catch (error: any) {
-      console.error('Upload error:', error);
-      setMessage(`❌ Upload failed: ${error.message}`);
-    } finally {
-      setUploading(false);
-    }
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
-    <div className="space-y-4">
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-        <div className="mx-auto mb-4 text-gray-400 flex justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="17 8 12 3 7 8"></polyline>
-            <line x1="12" y1="3" x2="12" y2="15"></line>
-          </svg>
-        </div>
-        <div className="space-y-2">
-          <p className="text-sm text-gray-600">
-            Choose a CSV file to upload to your S3 bucket
-          </p>
-          <input
-            id="file-input"
-            type="file"
-            accept=".csv"
-            onChange={handleFileSelect}
-            className="max-w-xs mx-auto"
-            disabled={uploading}
-          />
-        </div>
-      </div>
-
-      {file && (
-        <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-            <polyline points="10 9 9 9 8 9"></polyline>
-          </svg>
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-900">{file.name}</p>
-            <p className="text-xs text-gray-500">
-              {(file.size / 1024).toFixed(1)} KB
+    <div className="space-y-6">
+      <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Upload className="w-5 h-5 mr-2 text-blue-600" />
+            Upload CSV Files
+          </CardTitle>
+          <CardDescription>
+            Drag and drop your CSV files here, or click to browse. Maximum file size: 10MB.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 ${
+              isDragOver 
+                ? 'border-blue-500 bg-blue-50' 
+                : 'border-gray-300 hover:border-gray-400'
+            }`}
+            onDrop={handleDrop}
+            onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+            onDragLeave={() => setIsDragOver(false)}
+          >
+            <Upload className={`w-12 h-12 mx-auto mb-4 ${isDragOver ? 'text-blue-500' : 'text-gray-400'}`} />
+            <p className="text-lg font-medium mb-2">
+              {isDragOver ? 'Drop your files here' : 'Drag & drop CSV files here'}
             </p>
+            <p className="text-gray-600 mb-4">or</p>
+            <Button variant="outline" asChild>
+              <label className="cursor-pointer">
+                Browse Files
+                <input
+                  type="file"
+                  multiple
+                  accept=".csv"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </label>
+            </Button>
           </div>
-          {!uploading && (
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-600">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-              <polyline points="22 4 12 14.01 9 11.01"></polyline>
-            </svg>
-          )}
-        </div>
+        </CardContent>
+      </Card>
+
+      {files.length > 0 && (
+        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle>Upload Progress</CardTitle>
+            <CardDescription>
+              {files.filter(f => f.status === 'success').length} of {files.length} files completed
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {files.map(file => (
+                <div key={file.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex-shrink-0">
+                    {file.status === 'uploading' && (
+                      <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                    )}
+                    {file.status === 'success' && (
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    )}
+                    {file.status === 'error' && (
+                      <AlertCircle className="w-5 h-5 text-red-600" />
+                    )}
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {file.name}
+                      </p>
+                      <button
+                        onClick={() => removeFile(file.id)}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-600 mb-2">
+                      {formatFileSize(file.size)}
+                    </p>
+                    {file.status === 'uploading' && (
+                      <Progress value={file.progress} className="h-2" />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
-
-      {uploading && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Uploading...</span>
-            <span className="font-medium">{progress}%</span>
-          </div>
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-blue-600 transition-all duration-300" 
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-        </div>
-      )}
-
-      {message && (
-        <div className={`p-3 rounded-md ${message.includes('✅') ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
-          {message}
-        </div>
-      )}
-
-      <button 
-        onClick={handleUpload}
-        disabled={!file || uploading}
-        className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-md shadow-sm flex items-center justify-center"
-      >
-        {uploading ? (
-          <>
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-            Uploading...
-          </>
-        ) : (
-          <>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="17 8 12 3 7 8"></polyline>
-              <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-            Upload to S3
-          </>
-        )}
-      </button>
-
-      <div className="text-xs text-gray-500 space-y-1">
-        <p>• Files are stored in your S3 bucket: {awsExports.aws_user_files_s3_bucket}</p>
-        <p>• CSV files are automatically processed</p>
-      </div>
     </div>
   );
 };

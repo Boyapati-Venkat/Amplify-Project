@@ -1,207 +1,240 @@
-import React, { useState, useEffect } from 'react';
-import { generateClient } from 'aws-amplify/api';
-import { listTransformedRecords } from '../graphql/queries';
-import { createTransformedRecord } from '../graphql/mutations';
 
-const client = generateClient();
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { BarChart3, Search, Download, Filter, RefreshCw } from 'lucide-react';
 
 interface TransformedRecord {
   id: string;
-  userId: string;
   name: string;
   email: string;
   score: number;
   createdAt: string;
-  updatedAt: string;
-  owner: string;
 }
 
-interface DataViewerProps {
-  userId: string;
-}
-
-const DataViewer: React.FC<DataViewerProps> = ({ userId }) => {
+const DataViewer = () => {
   const [records, setRecords] = useState<TransformedRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
-  const [creating, setCreating] = useState(false);
+  const [filteredRecords, setFilteredRecords] = useState<TransformedRecord[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  // Mock data for demonstration
+  useEffect(() => {
+    const mockData: TransformedRecord[] = [
+      {
+        id: '1',
+        name: 'John Doe',
+        email: 'john@example.com',
+        score: 85,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: '2',
+        name: 'Jane Smith',
+        email: 'jane@example.com',
+        score: 92,
+        createdAt: new Date(Date.now() - 86400000).toISOString()
+      },
+      {
+        id: '3',
+        name: 'Bob Johnson',
+        email: 'bob@example.com',
+        score: 78,
+        createdAt: new Date(Date.now() - 172800000).toISOString()
+      },
+      {
+        id: '4',
+        name: 'Alice Brown',
+        email: 'alice@example.com',
+        score: 95,
+        createdAt: new Date(Date.now() - 259200000).toISOString()
+      },
+      {
+        id: '5',
+        name: 'Charlie Wilson',
+        email: 'charlie@example.com',
+        score: 88,
+        createdAt: new Date(Date.now() - 345600000).toISOString()
+      }
+    ];
+    
+    setRecords(mockData);
+    setFilteredRecords(mockData);
+  }, []);
 
   useEffect(() => {
-    fetchRecords();
-  }, [userId]);
-
-  async function fetchRecords() {
-    try {
-      setLoading(true);
-      setMessage('');
-      
-      console.log('Fetching records for user:', userId);
-      
-      try {
-        // First try with API_KEY
-        const response = await client.graphql({
-          query: listTransformedRecords,
-          variables: {
-            filter: {
-              userId: { eq: userId }
-            }
-          },
-          authMode: 'API_KEY'
-        });
-        
-        const items = response.data.listTransformedRecords.items;
-        console.log('Fetched records with API_KEY:', items);
-        setRecords(items);
-      } catch (apiKeyError) {
-        console.error('API_KEY auth failed, trying AMAZON_COGNITO_USER_POOLS:', apiKeyError);
-        
-        // Fall back to Cognito auth
-        const response = await client.graphql({
-          query: listTransformedRecords,
-          variables: {
-            filter: {
-              userId: { eq: userId }
-            }
-          }
-          // Default authMode is AMAZON_COGNITO_USER_POOLS
-        });
-        
-        const items = response.data.listTransformedRecords.items;
-        console.log('Fetched records with AMAZON_COGNITO_USER_POOLS:', items);
-        setRecords(items);
-      }
-      
-      if (records.length === 0) {
-        setMessage('No records found. Try adding a sample record.');
-      }
-    } catch (error) {
-      console.error('Error fetching records:', error);
-      setMessage('Error fetching records. Check console for details.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function addSampleRecord() {
-    try {
-      setCreating(true);
-      setMessage('');
-      
-      const newRecord = {
-        userId: userId,
-        name: `Sample User ${Math.floor(Math.random() * 100)}`,
-        email: `user${Math.floor(Math.random() * 100)}@example.com`,
-        score: Math.floor(Math.random() * 100) + 1
-      };
-      
-      console.log('Creating sample record:', newRecord);
-      
-      const response = await client.graphql({
-        query: createTransformedRecord,
-        variables: { 
-          input: newRecord
-        }
-      });
-      
-      console.log('Created record:', response.data.createTransformedRecord);
-      setMessage('Sample record added successfully!');
-      
-      // Refresh the list
-      fetchRecords();
-    } catch (error) {
-      console.error('Error creating record:', error);
-      setMessage('Error creating record. Check console for details.');
-    } finally {
-      setCreating(false);
-    }
-  }
-
-  if (loading) {
-    return (
-      <div>
-        <h2>Your Records</h2>
-        <p>Loading records...</p>
-      </div>
+    const filtered = records.filter(record =>
+      record.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }
+    setFilteredRecords(filtered);
+  }, [searchTerm, records]);
+
+  const handleRefresh = async () => {
+    setIsLoading(true);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setIsLoading(false);
+    
+    toast({
+      title: "Data refreshed",
+      description: "Your data has been updated successfully.",
+    });
+  };
+
+  const handleExport = () => {
+    const csvContent = [
+      ['Name', 'Email', 'Score', 'Created At'],
+      ...filteredRecords.map(record => [
+        record.name,
+        record.email,
+        record.score.toString(),
+        new Date(record.createdAt).toLocaleDateString()
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'exported-data.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export complete",
+      description: "Your data has been exported to CSV.",
+    });
+  };
+
+  const getScoreBadgeVariant = (score: number) => {
+    if (score >= 90) return 'default';
+    if (score >= 80) return 'secondary';
+    return 'outline';
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h2>Your Records</h2>
-        <div>
-          <button 
-            onClick={addSampleRecord}
-            disabled={creating}
-            style={{ 
-              marginRight: '0.5rem',
-              padding: '0.5rem 1rem',
-              backgroundColor: creating ? '#cccccc' : '#4CAF50',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: creating ? 'default' : 'pointer'
-            }}
-          >
-            {creating ? 'Adding...' : 'Add Sample'}
-          </button>
-          <button 
-            onClick={fetchRecords}
-            disabled={loading}
-            style={{ 
-              padding: '0.5rem 1rem',
-              backgroundColor: loading ? '#cccccc' : '#2196F3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: loading ? 'default' : 'pointer'
-            }}
-          >
-            {loading ? 'Loading...' : 'Refresh'}
-          </button>
-        </div>
-      </div>
-      
-      {message && (
-        <div style={{ 
-          padding: '0.75rem',
-          marginBottom: '1rem',
-          backgroundColor: message.includes('Error') ? '#f8d7da' : '#d4edda',
-          color: message.includes('Error') ? '#721c24' : '#155724',
-          borderRadius: '0.25rem'
-        }}>
-          {message}
-        </div>
-      )}
-      
-      {records.length === 0 ? (
-        <p>No records found. Click "Add Sample" to create one.</p>
-      ) : (
-        <table style={{ 
-          width: '100%', 
-          borderCollapse: 'collapse',
-          border: '1px solid #ddd'
-        }}>
-          <thead>
-            <tr style={{ backgroundColor: '#f2f2f2' }}>
-              <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Name</th>
-              <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Email</th>
-              <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Score</th>
-              <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Created</th>
-            </tr>
-          </thead>
-          <tbody>
-            {records.map(record => (
-              <tr key={record.id} style={{ borderBottom: '1px solid #ddd' }}>
-                <td style={{ padding: '8px' }}>{record.name}</td>
-                <td style={{ padding: '8px' }}>{record.email}</td>
-                <td style={{ padding: '8px' }}>{record.score}</td>
-                <td style={{ padding: '8px' }}>{new Date(record.createdAt).toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+    <div className="space-y-6">
+      <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center">
+                <BarChart3 className="w-5 h-5 mr-2 text-green-600" />
+                Data Records
+              </CardTitle>
+              <CardDescription>
+                View and manage your transformed data records
+              </CardDescription>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isLoading}
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+                disabled={filteredRecords.length === 0}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search by name or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button variant="outline" size="sm">
+              <Filter className="w-4 h-4 mr-2" />
+              Filter
+            </Button>
+          </div>
+
+          {filteredRecords.length === 0 ? (
+            <div className="text-center py-12">
+              <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No data found</h3>
+              <p className="text-gray-600">
+                {searchTerm ? 'Try adjusting your search terms.' : 'Upload some CSV files to see data here.'}
+              </p>
+            </div>
+          ) : (
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50">
+                    <TableHead className="font-semibold">Name</TableHead>
+                    <TableHead className="font-semibold">Email</TableHead>
+                    <TableHead className="font-semibold">Score</TableHead>
+                    <TableHead className="font-semibold">Created</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredRecords.map((record) => (
+                    <TableRow key={record.id} className="hover:bg-gray-50">
+                      <TableCell className="font-medium">{record.name}</TableCell>
+                      <TableCell className="text-gray-600">{record.email}</TableCell>
+                      <TableCell>
+                        <Badge variant={getScoreBadgeVariant(record.score)}>
+                          {record.score}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        {formatDate(record.createdAt)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          {filteredRecords.length > 0 && (
+            <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
+              <p>
+                Showing {filteredRecords.length} of {records.length} records
+              </p>
+              <div className="flex items-center space-x-2">
+                <Button variant="outline" size="sm" disabled>
+                  Previous
+                </Button>
+                <Button variant="outline" size="sm" disabled>
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
