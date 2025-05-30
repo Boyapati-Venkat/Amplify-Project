@@ -49,6 +49,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ userId }) => {
         key: fileName,
         data: file,
         options: {
+          accessLevel: 'private', // Explicitly set to private
           contentType: file.type,
           onProgress: ({ transferredBytes, totalBytes }) => {
             if (totalBytes) {
