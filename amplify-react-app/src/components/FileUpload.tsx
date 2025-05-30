@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Amplify } from 'aws-amplify';
-import * as StorageModule from 'aws-amplify/storage';
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { fromCognitoIdentityPool } from "@aws-sdk/credential-providers";
 import awsExports from '../aws-exports';
 
 interface FileUploadProps {
@@ -44,25 +44,40 @@ const FileUpload: React.FC<FileUploadProps> = ({ userId }) => {
       
       console.log('Uploading to bucket:', awsExports.aws_user_files_s3_bucket);
       
-      // Use uploadData from aws-amplify/storage
-      const result = await StorageModule.uploadData({
-        key: fileName,
-        data: file,
-        options: {
-          accessLevel: 'private', // Explicitly set to private
-          contentType: file.type,
-          onProgress: ({ transferredBytes, totalBytes }) => {
-            if (totalBytes) {
-              const percentage = Math.round((transferredBytes / totalBytes) * 100);
-              setProgress(percentage);
-              console.log(`Uploaded: ${transferredBytes}/${totalBytes} (${percentage}%)`);
-            }
-          },
-        }
+      // Create S3 client with Cognito credentials
+      const s3Client = new S3Client({
+        region: awsExports.aws_user_files_s3_bucket_region,
+        credentials: fromCognitoIdentityPool({
+          clientConfig: { region: awsExports.aws_cognito_region },
+          identityPoolId: awsExports.aws_cognito_identity_pool_id
+        })
       });
 
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + 10;
+        });
+      }, 200);
+
+      // Create and send the PutObject command
+      const command = new PutObjectCommand({
+        Bucket: awsExports.aws_user_files_s3_bucket,
+        Key: fileName,
+        Body: file,
+        ContentType: file.type
+      });
+
+      const response = await s3Client.send(command);
+      
+      clearInterval(progressInterval);
       setProgress(100);
-      console.log('Upload successful:', result);
+      
+      console.log('Upload successful:', response);
       setMessage('✅ Upload successful!');
 
       // Reset form
