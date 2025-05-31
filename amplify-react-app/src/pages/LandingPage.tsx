@@ -23,7 +23,7 @@ const LandingPage = () => {
     {
       icon: GitBranch,
       title: 'Migration Strategy Generation',
-      description: 'Automatically generate a 6-hour cloud migration plan.'
+      description: 'Automatically generate a cloud migration plan based on the 6 Rs strategy.'
     },
     {
       icon: DollarSign,
