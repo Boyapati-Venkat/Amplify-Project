@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import NewPasswordForm from '../components/NewPasswordForm';
+import AuthBanner from '../components/AuthBanner';
 
 const AuthPage = () => {
   const [email, setEmail] = useState('');
@@ -19,9 +20,21 @@ const AuthPage = () => {
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [currentTab, setCurrentTab] = useState('signin');
   
+  // Banner state
+  const [bannerMessage, setBannerMessage] = useState('');
+  const [bannerType, setBannerType] = useState<'success' | 'error' | 'warning' | 'info'>('info');
+  const [showBanner, setShowBanner] = useState(false);
+  
   const { signIn, signUp, confirmSignUpWithCode, passwordChangeRequired, user, isLoading, error, clearError } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Display banner function
+  const displayBanner = (message: string, type: 'success' | 'error' | 'warning' | 'info') => {
+    setBannerMessage(message);
+    setBannerType(type);
+    setShowBanner(true);
+  };
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -35,6 +48,13 @@ const AuthPage = () => {
     clearError();
   }, [currentTab, email, password, name, confirmationCode, clearError]);
 
+  // Show error in banner if present
+  useEffect(() => {
+    if (error) {
+      displayBanner(error, 'error');
+    }
+  }, [error]);
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -43,17 +63,10 @@ const AuthPage = () => {
       const success = await signIn(email, password);
       
       if (success) {
-        toast({
-          title: "Sign in successful",
-          description: "Welcome back!",
-        });
-        navigate('/dashboard');
+        displayBanner('Welcome back!', 'success');
+        setTimeout(() => navigate('/dashboard'), 1500);
       } else if (error) {
-        toast({
-          title: "Sign in failed",
-          description: error,
-          variant: "destructive",
-        });
+        displayBanner(error, 'error');
       }
     } catch (err: any) {
       console.error('Sign in error in component:', err);
@@ -63,13 +76,11 @@ const AuthPage = () => {
       
       if (errorMessage.includes("incorrect username or password")) {
         errorMessage = "Incorrect email or password. Please try again.";
+      } else if (errorMessage.includes("User does not exist")) {
+        errorMessage = "No user found with this email.";
       }
       
-      toast({
-        title: "Authentication Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      displayBanner(errorMessage, 'error');
     }
   };
 
@@ -81,23 +92,13 @@ const AuthPage = () => {
       const { success, requiresConfirmation } = await signUp(email, password, name);
       
       if (success && requiresConfirmation) {
-        toast({
-          title: "Verification required",
-          description: "Please check your email for a verification code",
-        });
+        displayBanner('Verification email sent. Please check your inbox.', 'info');
         setNeedsConfirmation(true);
       } else if (success) {
-        toast({
-          title: "Account created",
-          description: "Your account has been created successfully!",
-        });
-        navigate('/onboarding');
+        displayBanner('Account created successfully!', 'success');
+        setTimeout(() => navigate('/onboarding'), 1500);
       } else if (error) {
-        toast({
-          title: "Sign up failed",
-          description: error,
-          variant: "destructive",
-        });
+        displayBanner(error, 'error');
       }
     } catch (err: any) {
       console.error('Sign up error in component:', err);
@@ -106,18 +107,14 @@ const AuthPage = () => {
       let errorMessage = err.message || "An unexpected error occurred";
       
       if (errorMessage.includes("Password not long enough")) {
-        errorMessage = "Password must be at least 8 characters long";
+        errorMessage = "Password must be at least 8 characters long.";
       } else if (errorMessage.includes("User already exists")) {
         errorMessage = "An account with this email already exists. Please sign in instead.";
       } else if (errorMessage.includes("password policy")) {
-        errorMessage = "Password must include uppercase, lowercase, numbers, and special characters";
+        errorMessage = "Password must include uppercase, lowercase, numbers, and special characters.";
       }
       
-      toast({
-        title: "Registration Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      displayBanner(errorMessage, 'error');
     }
   };
 
@@ -129,17 +126,10 @@ const AuthPage = () => {
       const confirmed = await confirmSignUpWithCode(email, confirmationCode);
       
       if (confirmed) {
-        toast({
-          title: "Account verified",
-          description: "Your account has been verified successfully!",
-        });
-        navigate('/onboarding');
+        displayBanner('Account verified successfully!', 'success');
+        setTimeout(() => navigate('/onboarding'), 1500);
       } else if (error) {
-        toast({
-          title: "Verification failed",
-          description: error,
-          variant: "destructive",
-        });
+        displayBanner(error, 'error');
       }
     } catch (err: any) {
       console.error('Confirmation error in component:', err);
@@ -153,11 +143,7 @@ const AuthPage = () => {
         errorMessage = "The verification code has expired. Please request a new code.";
       }
       
-      toast({
-        title: "Verification Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      displayBanner(errorMessage, 'error');
     }
   };
 
@@ -175,6 +161,12 @@ const AuthPage = () => {
   if (passwordChangeRequired) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <AuthBanner 
+          message={bannerMessage}
+          type={bannerType}
+          visible={showBanner}
+          onClose={() => setShowBanner(false)}
+        />
         <nav className="px-6 py-4 flex items-center justify-between">
           <Button 
             variant="ghost" 
@@ -198,6 +190,12 @@ const AuthPage = () => {
   if (needsConfirmation) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <AuthBanner 
+          message={bannerMessage}
+          type={bannerType}
+          visible={showBanner}
+          onClose={() => setShowBanner(false)}
+        />
         {/* Navigation with Home Icon */}
         <nav className="px-6 py-4 flex items-center justify-between">
           <Button 
@@ -220,13 +218,6 @@ const AuthPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {error && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              
               <form onSubmit={handleConfirmation} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="confirmation-code">Confirmation Code</Label>
@@ -262,6 +253,12 @@ const AuthPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <AuthBanner 
+        message={bannerMessage}
+        type={bannerType}
+        visible={showBanner}
+        onClose={() => setShowBanner(false)}
+      />
       {/* Navigation with Home Icon */}
       <nav className="px-6 py-4 flex items-center justify-between">
         <Button 
@@ -284,13 +281,6 @@ const AuthPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            
             <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
