@@ -7,8 +7,8 @@ const awsconfig = {
   // Cognito
   aws_cognito_identity_pool_id: "us-east-1:37e188c7-2911-41de-b8a0-c81330069628",
   aws_cognito_region: "us-east-1",
-  aws_user_pools_id: "us-east-1_XPqNBhpfR",
-  aws_user_pools_web_client_id: "40vt6731ha2r02qu8srsujbass",
+  aws_user_pools_id: "us-east-1_pMJOxMpv4",
+  aws_user_pools_web_client_id: "2jqokqi8to9m2nlpub2g8b7tjh",
   oauth: {},
 
   // AppSync
