@@ -31,6 +31,11 @@ const AmplifyFileUpload: React.FC<FileUploadProps> = ({ userId }) => {
       return;
     }
 
+    if (typeof window === 'undefined') {
+      setMessage('Upload not available during build process.');
+      return;
+    }
+
     setUploading(true);
     setProgress(0);
     setMessage('');

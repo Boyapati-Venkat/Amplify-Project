@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/api';
-import awsExports from '../aws-exports';
+import type { GraphQLResult } from '@aws-amplify/api-graphql';
 
 // Define GraphQL queries
 const listTransformedRecords = /* GraphQL */ `
@@ -43,9 +44,6 @@ const createTransformedRecord = /* GraphQL */ `
   }
 `;
 
-// Initialize the GraphQL client
-const client = generateClient();
-
 interface TransformedRecord {
   id: string;
   userId: string;
@@ -68,15 +66,32 @@ const AmplifyDataViewer: React.FC<AmplifyDataViewerProps> = ({ userId }) => {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    fetchRecords();
+    // Only fetch data in browser environment
+    if (typeof window !== 'undefined' && userId) {
+      fetchRecords();
+    } else if (typeof window !== 'undefined') {
+      setLoading(false);
+      setMessage('No user ID provided');
+    } else {
+      // During build, set loading to false
+      setLoading(false);
+    }
   }, [userId]);
 
   async function fetchRecords() {
+    if (!userId || typeof window === 'undefined') {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setMessage('');
       
       console.log('Fetching records for user:', userId);
+      
+      // Initialize client only when needed
+      const client = generateClient();
       
       try {
         // First try with API_KEY
@@ -87,34 +102,38 @@ const AmplifyDataViewer: React.FC<AmplifyDataViewerProps> = ({ userId }) => {
               userId: { eq: userId }
             }
           },
-          authMode: 'API_KEY'
-        });
+          authMode: 'apiKey'
+        }) as GraphQLResult<any>;
         
-        const items = response.data.listTransformedRecords.items;
-        console.log('Fetched records with API_KEY:', items);
+        const items = response?.data?.listTransformedRecords?.items || [];
+        console.log('Fetched records with apiKey:', items);
         setRecords(items);
       } catch (apiKeyError) {
-        console.error('API_KEY auth failed, trying AMAZON_COGNITO_USER_POOLS:', apiKeyError);
+        console.error('apiKey auth failed, trying AMAZON_COGNITO_USER_POOLS:', apiKeyError);
         
-        // Fall back to Cognito auth
-        const response = await client.graphql({
-          query: listTransformedRecords,
-          variables: {
-            filter: {
-              userId: { eq: userId }
+        try {
+          // Fall back to Cognito auth
+          const response = await client.graphql({
+            query: listTransformedRecords,
+            variables: {
+              filter: {
+                userId: { eq: userId }
+              }
             }
+            // Default authMode is AMAZON_COGNITO_USER_POOLS
+          }) as GraphQLResult<any>;
+          
+          const items = response?.data?.listTransformedRecords?.items || [];
+          console.log('Fetched records with AMAZON_COGNITO_USER_POOLS:', items);
+          setRecords(items);
+          
+          if (items.length === 0) {
+            setMessage('No records found. Try adding a sample record.');
           }
-          // Default authMode is AMAZON_COGNITO_USER_POOLS
-        });
-        
-        const items = response.data.listTransformedRecords.items;
-        console.log('Fetched records with AMAZON_COGNITO_USER_POOLS:', items);
-        setRecords(items);
-      }
-      
-      const fetchedRecords = response.data.listTransformedRecords.items;
-      if (fetchedRecords.length === 0) {
-        setMessage('No records found. Try adding a sample record.');
+        } catch (cognitoError) {
+          console.error('Both auth methods failed:', cognitoError);
+          setMessage('Unable to fetch records. Please ensure you are authenticated.');
+        }
       }
     } catch (error) {
       console.error('Error fetching records:', error);
@@ -125,9 +144,17 @@ const AmplifyDataViewer: React.FC<AmplifyDataViewerProps> = ({ userId }) => {
   }
 
   async function addSampleRecord() {
+    if (!userId || typeof window === 'undefined') {
+      setMessage('No user ID provided');
+      return;
+    }
+
     try {
       setCreating(true);
       setMessage('');
+      
+      // Initialize client only when needed
+      const client = generateClient();
       
       const newRecord = {
         userId: userId,
@@ -143,9 +170,9 @@ const AmplifyDataViewer: React.FC<AmplifyDataViewerProps> = ({ userId }) => {
         variables: { 
           input: newRecord
         }
-      });
+      }) as GraphQLResult<any>;
       
-      console.log('Created record:', response.data.createTransformedRecord);
+      console.log('Created record:', response?.data?.createTransformedRecord);
       setMessage('Sample record added successfully!');
       
       // Refresh the list
@@ -158,11 +185,11 @@ const AmplifyDataViewer: React.FC<AmplifyDataViewerProps> = ({ userId }) => {
     }
   }
 
-  if (loading) {
+  if (!userId) {
     return (
       <div>
         <h2>Your Records</h2>
-        <p>Loading records...</p>
+        <p>Please log in to view your records.</p>
       </div>
     );
   }

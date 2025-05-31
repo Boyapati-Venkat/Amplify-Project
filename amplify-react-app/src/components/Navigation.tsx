@@ -2,35 +2,45 @@
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Database, LogOut, User, Settings } from 'lucide-react';
+import { LogOut, User, Settings, Home } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
-interface User {
-  id: string;
-  email: string;
-  name?: string;
-  isOnboarded?: boolean;
-}
+const Navigation = () => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
-interface NavigationProps {
-  user: User;
-  onSignOut: () => void;
-}
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
-const Navigation = ({ user, onSignOut }: NavigationProps) => {
+  const handleHomeClick = () => {
+    navigate('/');
+  };
+
   const getInitials = (name?: string) => {
     if (!name) return 'U';
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
+  if (!user) return null;
+
   return (
     <nav className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 px-6 py-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-            <Database className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xl font-bold gradient-text">DataFlow</span>
-        </div>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={handleHomeClick}
+          className="hover:bg-gray-100"
+        >
+          <Home className="h-5 w-5" />
+        </Button>
         
         <div className="flex items-center space-x-4">
           <span className="text-sm text-gray-600 hidden md:block">
@@ -56,7 +66,7 @@ const Navigation = ({ user, onSignOut }: NavigationProps) => {
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onSignOut} className="flex items-center text-red-600">
+              <DropdownMenuItem onClick={handleSignOut} className="flex items-center text-red-600">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Sign out</span>
               </DropdownMenuItem>

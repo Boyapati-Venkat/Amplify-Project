@@ -1,9 +1,9 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowRight, Database, Upload, TrendingUp, Shield, Zap, Users } from 'lucide-react';
+import { ArrowRight, Upload, TrendingUp, Shield, Zap, Users, Home } from 'lucide-react';
+import Logo from '../components/Logo';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -16,14 +16,9 @@ const LandingPage = () => {
       description: 'Drag and drop your CSV files with secure cloud storage'
     },
     {
-      icon: Database,
-      title: 'Smart Data Processing',
-      description: 'Automatic data transformation and validation'
-    },
-    {
       icon: TrendingUp,
-      title: 'Real-time Analytics',
-      description: 'Instant insights and visualizations from your data'
+      title: 'Migration Analysis',
+      description: 'Automatic data transformation and validation for migrations'
     },
     {
       icon: Shield,
@@ -38,20 +33,26 @@ const LandingPage = () => {
     {
       icon: Users,
       title: 'Team Collaboration',
-      description: 'Share insights and work together on data projects'
+      description: 'Share insights and work together on migration projects'
     }
   ];
+
+  const handleHomeClick = () => {
+    navigate('/');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Navigation */}
       <nav className="px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-            <Database className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xl font-bold gradient-text">DataFlow</span>
-        </div>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={handleHomeClick}
+          className="hover:bg-gray-100"
+        >
+          <Home className="h-5 w-5" />
+        </Button>
         <Button 
           variant="outline" 
           onClick={() => navigate('/auth')}
@@ -65,11 +66,10 @@ const LandingPage = () => {
       <section className="px-6 py-20 text-center">
         <div className="max-w-4xl mx-auto animate-fade-in">
           <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
-            Transform Your Data Into{' '}
-            <span className="gradient-text">Actionable Insights</span>
+            <span className="gradient-text">Migration Assistance Tool (MAIT)</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Upload, process, and analyze your CSV data with enterprise-grade security and lightning-fast performance.
+            Upload, analyze, and migrate your data with enterprise-grade security and expert guidance from PwC.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button 
@@ -79,7 +79,7 @@ const LandingPage = () => {
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
             >
-              Get Started Free
+              Get Started
               <ArrowRight className={`ml-2 w-5 h-5 transition-transform duration-300 ${isHovered ? 'translate-x-1' : ''}`} />
             </Button>
             <Button 
@@ -87,7 +87,7 @@ const LandingPage = () => {
               size="lg"
               className="border-gray-300 hover:bg-gray-50 px-8 py-3 text-lg rounded-xl"
             >
-              Watch Demo
+              Learn More
             </Button>
           </div>
         </div>
@@ -98,10 +98,10 @@ const LandingPage = () => {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Everything you need to work with data
+              Everything you need for successful migrations
             </h2>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              From upload to insights, we've got you covered with powerful features and enterprise-grade security.
+              From data analysis to migration execution, we've got you covered with powerful tools and expert guidance.
             </p>
           </div>
           
@@ -125,17 +125,17 @@ const LandingPage = () => {
       <section className="px-6 py-20 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Ready to transform your data workflow?
+            Ready to accelerate your migration?
           </h2>
           <p className="text-xl mb-8 opacity-90">
-            Join thousands of users who trust DataFlow for their data processing needs.
+            Join organizations worldwide who trust PwC for their critical migration projects.
           </p>
           <Button 
             size="lg" 
             onClick={() => navigate('/auth')}
             className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
           >
-            Start Your Free Trial
+            Start Your Migration
             <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
         </div>
@@ -144,13 +144,10 @@ const LandingPage = () => {
       {/* Footer */}
       <footer className="px-6 py-12 bg-gray-50 border-t">
         <div className="max-w-6xl mx-auto text-center text-gray-600">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <div className="w-6 h-6 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <Database className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-lg font-bold gradient-text">DataFlow</span>
+          <div className="flex items-center justify-center space-x-3 mb-4">
+            <Home className="h-5 w-5" />
           </div>
-          <p>&copy; 2024 DataFlow. All rights reserved.</p>
+          <p>&copy; 2024 PwC. All rights reserved.</p>
         </div>
       </footer>
     </div>

@@ -32,6 +32,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Only check auth in browser environment
+    if (typeof window === 'undefined') {
+      setIsLoading(false);
+      return;
+    }
+
     // Check for existing Amplify session
     const checkAuth = async () => {
       try {
@@ -56,6 +62,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    if (typeof window === 'undefined') {
+      throw new Error('Authentication not available during build');
+    }
+
     setIsLoading(true);
     try {
       await amplifySignIn({ username: email, password });
@@ -81,6 +91,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signUp = async (email: string, password: string, name: string) => {
+    if (typeof window === 'undefined') {
+      throw new Error('Authentication not available during build');
+    }
+
     setIsLoading(true);
     try {
       await amplifySignUp({
@@ -117,6 +131,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     try {
       await amplifySignOut();
       setUser(null);
