@@ -293,6 +293,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setError('Password must be at least 8 characters long.');
       } else if (error.message && error.message.includes('password policy')) {
         setError('Password must include uppercase, lowercase, numbers, and special characters.');
+      } else if (error.message && error.message.includes('Please contact admin')) {
+        // Handle the Lambda trigger error
+        setError(error.message);
       } else {
         setError(error.message || 'Registration failed');
       }

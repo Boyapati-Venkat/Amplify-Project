@@ -1,4 +1,3 @@
-
 import { record } from 'aws-amplify/analytics';
 
 // Define event types for type safety
@@ -38,8 +37,11 @@ export interface AnalyticsAttributes {
 
 // Check if analytics is properly configured
 const isAnalyticsConfigured = () => {
-  const pinpointAppId = import.meta.env.VITE_PINPOINT_APP_ID || 'your-pinpoint-app-id';
-  return pinpointAppId && pinpointAppId !== 'your-pinpoint-app-id';
+  // Check for End User Messaging App ID first, then fall back to Pinpoint for backward compatibility
+  const appId = import.meta.env.VITE_END_USER_MESSAGING_APP_ID || 
+                import.meta.env.VITE_PINPOINT_APP_ID || 
+                '';
+  return appId && appId !== '';
 };
 
 // Helper function to convert attributes to string format for AWS Amplify
@@ -73,19 +75,19 @@ export class Analytics {
         ...attributes,
         sessionId: this.sessionId,
         timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent,
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
       };
 
       console.log(`📊 Analytics Event: ${eventType}`, enrichedAttributes);
 
-      // Only send to Pinpoint if it's configured
+      // Only send to AWS if it's configured
       if (isAnalyticsConfigured()) {
         await record({
           name: eventType,
           attributes: convertAttributesToStrings(enrichedAttributes),
         });
       } else {
-        console.log('📊 Analytics: Pinpoint not configured, event logged locally only');
+        console.log('📊 Analytics: AWS End User Messaging not configured, event logged locally only');
       }
     } catch (error) {
       console.error('Analytics tracking error:', error);

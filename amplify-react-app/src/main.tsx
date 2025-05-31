@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { Amplify } from 'aws-amplify';
 import { Hub } from 'aws-amplify/utils';
+import { record } from 'aws-amplify/analytics';
 import App from "./App.tsx";
 import "./index.css";
 import awsExports from './aws-exports.js';
@@ -17,6 +18,21 @@ if (typeof window !== 'undefined') {
     
     if (payload.event === 'signIn_failure' || payload.event === 'signUp_failure') {
       console.error('Auth error:', payload.data);
+    }
+    
+    // Track auth events in analytics
+    if (payload.event === 'signIn') {
+      record({
+        name: 'user_signin',
+        attributes: { timestamp: new Date().toISOString() }
+      }).catch(err => console.error('Analytics error:', err));
+    }
+    
+    if (payload.event === 'signUp') {
+      record({
+        name: 'user_signup',
+        attributes: { timestamp: new Date().toISOString() }
+      }).catch(err => console.error('Analytics error:', err));
     }
   });
 }

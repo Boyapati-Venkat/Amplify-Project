@@ -10,6 +10,7 @@ import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import MigrationStrategy from "./pages/MigrationStrategy";
 import { AuthProvider } from "./contexts/AuthContext";
+import { AnalyticsDashboard } from "./analytics";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/migration-strategy" element={<MigrationStrategy />} />
+            <Route path="/analytics" element={<AnalyticsDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

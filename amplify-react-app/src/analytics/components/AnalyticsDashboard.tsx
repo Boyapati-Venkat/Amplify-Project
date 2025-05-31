@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,8 +11,15 @@ const AnalyticsDashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   // Check if analytics is configured
-  const pinpointAppId = import.meta.env.VITE_PINPOINT_APP_ID || 'your-pinpoint-app-id';
-  const isConfigured = pinpointAppId && pinpointAppId !== 'your-pinpoint-app-id';
+  const appId = import.meta.env.VITE_END_USER_MESSAGING_APP_ID || 
+                import.meta.env.VITE_PINPOINT_APP_ID || 
+                '';
+  const isConfigured = appId && appId !== '';
+  
+  // Service name for display
+  const serviceName = import.meta.env.VITE_END_USER_MESSAGING_APP_ID 
+    ? 'AWS End User Messaging' 
+    : 'Amazon Pinpoint';
 
   // Enhanced mock data for demonstration
   const mockAnalyticsData = [
@@ -86,8 +92,8 @@ const AnalyticsDashboard = () => {
         )}
         <AlertDescription>
           {isConfigured 
-            ? "Analytics is properly configured and connected to Amazon Pinpoint"
-            : "Analytics is running in demo mode. Configure Pinpoint App ID to enable real tracking."
+            ? `Analytics is properly configured and connected to ${serviceName}`
+            : "Analytics is running in demo mode. Configure AWS End User Messaging App ID to enable real tracking."
           }
         </AlertDescription>
       </Alert>
@@ -343,21 +349,28 @@ const AnalyticsDashboard = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <h4 className="font-semibold">1. Configure Amazon Pinpoint</h4>
+            <h4 className="font-semibold">1. Configure AWS End User Messaging</h4>
             <p className="text-sm text-gray-600">
-              Go to AWS Console → Amazon Pinpoint → Create a new app and get your App ID
+              Go to AWS Console → AWS End User Messaging → Create a new project and get your App ID
             </p>
           </div>
           <div className="space-y-2">
             <h4 className="font-semibold">2. Set Environment Variable</h4>
             <p className="text-sm text-gray-600">
-              Create a .env file and add: VITE_PINPOINT_APP_ID=your_actual_app_id
+              Create a .env file and add: VITE_END_USER_MESSAGING_APP_ID=your_actual_app_id
             </p>
           </div>
           <div className="space-y-2">
             <h4 className="font-semibold">3. View Real-time Events</h4>
             <p className="text-sm text-gray-600">
-              Events will appear in Amazon Pinpoint Console → Analytics → Events
+              Events will appear in AWS End User Messaging Console → Analytics → Events
+            </p>
+          </div>
+          <div className="space-y-2 pt-4 border-t border-gray-200">
+            <h4 className="font-semibold text-amber-600">Legacy Support Note</h4>
+            <p className="text-sm text-gray-600">
+              For backward compatibility, this system also supports Amazon Pinpoint via the VITE_PINPOINT_APP_ID environment variable, 
+              but AWS End User Messaging is recommended as Pinpoint is being deprecated.
             </p>
           </div>
         </CardContent>

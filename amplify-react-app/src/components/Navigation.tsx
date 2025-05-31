@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '../contexts/AuthContext';
-import { Menu, X, LogOut, Home, Upload, BookOpen } from 'lucide-react';
+import { Menu, X, LogOut, Home, Upload, BookOpen, BarChart3 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Analytics } from '../analytics';
 
 const Navigation = () => {
   const { user, signOut } = useAuth();
@@ -17,9 +18,16 @@ const Navigation = () => {
     navigate('/');
   };
 
+  const handleNavigation = async (path: string, target: string) => {
+    // Track navigation events
+    await Analytics.trackNavigationClick(target);
+    navigate(path);
+  };
+
   const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: <Home className="w-4 h-4 mr-2" /> },
-    { path: '/migration-strategy', label: 'Migration Strategy', icon: <BookOpen className="w-4 h-4 mr-2" /> },
+    { path: '/dashboard', label: 'Dashboard', icon: <Home className="w-4 h-4 mr-2" />, target: 'dashboard' },
+    { path: '/migration-strategy', label: 'Migration Strategy', icon: <BookOpen className="w-4 h-4 mr-2" />, target: 'migration_strategy' },
+    { path: '/analytics', label: 'Analytics', icon: <BarChart3 className="w-4 h-4 mr-2" />, target: 'analytics' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -43,6 +51,7 @@ const Navigation = () => {
                   <Link
                     key={item.path}
                     to={item.path}
+                    onClick={() => Analytics.trackNavigationClick(item.target)}
                     className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
                       isActive(item.path)
                         ? 'bg-blue-50 text-blue-700'
@@ -102,12 +111,15 @@ const Navigation = () => {
               <Link
                 key={item.path}
                 to={item.path}
+                onClick={() => {
+                  Analytics.trackNavigationClick(item.target);
+                  setMobileMenuOpen(false);
+                }}
                 className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${
                   isActive(item.path)
                     ? 'bg-blue-50 text-blue-700'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
-                onClick={() => setMobileMenuOpen(false)}
               >
                 {item.icon}
                 {item.label}
