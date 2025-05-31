@@ -73,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: currentUser.userId,
             email: attributes.email || '',
             name: attributes.name,
-            isOnboarded: attributes['custom:isOnboarded'] === 'true'
+            isOnboarded: false // Default value instead of using custom attribute
           });
           
           logger.logAuthSuccess('Session Restored', {
@@ -126,7 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: currentUser.userId,
             email: attributes.email || email,
             name: attributes.name || email.split('@')[0],
-            isOnboarded: attributes['custom:isOnboarded'] === 'true'
+            isOnboarded: false // Default value instead of using custom attribute
           };
           
           setUser(userData);
@@ -167,8 +167,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         options: {
           userAttributes: {
             email,
-            name,
-            'custom:isOnboarded': 'false'
+            name
+            // Removed custom:isOnboarded attribute that was causing the error
           },
           autoSignIn: true
         }
@@ -194,7 +194,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: currentUser.userId,
             email,
             name,
-            isOnboarded: false
+            isOnboarded: false // Default value instead of using custom attribute
           };
           
           setUser(userData);
@@ -246,7 +246,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: currentUser.userId,
           email: attributes.email || email,
           name: attributes.name || email.split('@')[0],
-          isOnboarded: attributes['custom:isOnboarded'] === 'true'
+          isOnboarded: false // Default value instead of using custom attribute
         };
         
         setUser(userData);
