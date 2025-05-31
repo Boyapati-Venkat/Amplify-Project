@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -17,6 +17,7 @@ const FileUpload = () => {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -115,6 +116,13 @@ const FileUpload = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // Function to trigger file input click
+  const triggerFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
@@ -129,7 +137,7 @@ const FileUpload = () => {
         </CardHeader>
         <CardContent>
           <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 ${
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 cursor-pointer ${
               isDragOver 
                 ? 'border-blue-500 bg-blue-50' 
                 : 'border-gray-300 hover:border-gray-400'
@@ -137,24 +145,24 @@ const FileUpload = () => {
             onDrop={handleDrop}
             onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
             onDragLeave={() => setIsDragOver(false)}
+            onClick={triggerFileInput}
           >
             <Upload className={`w-12 h-12 mx-auto mb-4 ${isDragOver ? 'text-blue-500' : 'text-gray-400'}`} />
             <p className="text-lg font-medium mb-2">
               {isDragOver ? 'Drop your files here' : 'Drag & drop CSV files here'}
             </p>
             <p className="text-gray-600 mb-4">or</p>
-            <Button variant="outline" asChild>
-              <label className="cursor-pointer">
-                Browse Files
-                <input
-                  type="file"
-                  multiple
-                  accept=".csv"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-              </label>
+            <Button variant="outline">
+              Browse Files
             </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".csv"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
           </div>
         </CardContent>
       </Card>
