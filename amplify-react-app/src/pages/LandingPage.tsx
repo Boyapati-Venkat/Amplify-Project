@@ -85,6 +85,7 @@ const LandingPage = () => {
             <Button 
               variant="outline" 
               size="lg"
+              onClick={() => navigate('/migration-strategy')}
               className="border-gray-300 hover:bg-gray-50 px-8 py-3 text-lg rounded-xl"
             >
               Learn More
