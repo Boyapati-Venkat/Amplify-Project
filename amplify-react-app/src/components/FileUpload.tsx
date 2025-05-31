@@ -4,13 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, FileText, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { uploadData } from 'aws-amplify/storage';
 
 interface UploadedFile {
   id: string;
   name: string;
   size: number;
-  status: 'uploading' | 'success' | 'error';
+  status: 'selected' | 'uploading' | 'success' | 'error';
   progress: number;
+  file: File;
+  error?: string;
 }
 
 const FileUpload = () => {
@@ -62,46 +65,79 @@ const FileUpload = () => {
         id: Math.random().toString(36).substr(2, 9),
         name: file.name,
         size: file.size,
-        status: 'uploading',
-        progress: 0
+        status: 'selected',
+        progress: 0,
+        file: file
       };
 
       setFiles(prev => [...prev, newFile]);
-      simulateUpload(newFile.id);
     });
   };
 
-  const simulateUpload = (fileId: string) => {
-    // Check for browser environment
-    if (typeof window === 'undefined') return;
-    
-    const interval = setInterval(() => {
-      setFiles(prev => prev.map(file => {
-        if (file.id === fileId) {
-          const newProgress = Math.min(file.progress + Math.random() * 30, 100);
-          const isComplete = newProgress >= 100;
-          
-          return {
-            ...file,
-            progress: newProgress,
-            status: isComplete ? 'success' : 'uploading'
-          };
-        }
-        return file;
-      }));
-    }, 200);
+  const uploadFile = async (fileId: string) => {
+    const fileToUpload = files.find(f => f.id === fileId);
+    if (!fileToUpload) return;
 
-    setTimeout(() => {
-      clearInterval(interval);
+    try {
+      // Update status to uploading
       setFiles(prev => prev.map(file => 
-        file.id === fileId ? { ...file, progress: 100, status: 'success' } : file
+        file.id === fileId ? { ...file, status: 'uploading' } : file
+      ));
+
+      // Upload to S3
+      const result = await uploadData({
+        key: `uploads/${fileToUpload.name}`,
+        data: fileToUpload.file,
+        options: {
+          onProgress: (progress) => {
+            const percentage = Math.round((progress.loaded / progress.total) * 100);
+            setFiles(prev => prev.map(file => 
+              file.id === fileId ? { ...file, progress: percentage } : file
+            ));
+          }
+        }
+      });
+
+      console.log('Upload successful:', result);
+      
+      // Update status to success
+      setFiles(prev => prev.map(file => 
+        file.id === fileId ? { ...file, status: 'success', progress: 100 } : file
       ));
       
       toast({
         title: "Upload complete",
-        description: "Your file has been processed successfully.",
+        description: `${fileToUpload.name} has been uploaded successfully.`,
       });
-    }, 2000 + Math.random() * 2000);
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      
+      // Update status to error
+      setFiles(prev => prev.map(file => 
+        file.id === fileId ? { ...file, status: 'error', error: error.message } : file
+      ));
+      
+      toast({
+        title: "Upload failed",
+        description: `Failed to upload ${fileToUpload.name}: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const uploadAllFiles = async () => {
+    const selectedFiles = files.filter(file => file.status === 'selected');
+    if (selectedFiles.length === 0) return;
+    
+    toast({
+      title: "Upload started",
+      description: `Uploading ${selectedFiles.length} file(s)...`,
+    });
+    
+    // Upload each file sequentially
+    for (const file of selectedFiles) {
+      await uploadFile(file.id);
+    }
   };
 
   const removeFile = (fileId: string) => {
@@ -122,6 +158,9 @@ const FileUpload = () => {
       fileInputRef.current.click();
     }
   };
+
+  // Check if there are any selected files
+  const hasSelectedFiles = files.some(file => file.status === 'selected');
 
   return (
     <div className="space-y-6">
@@ -164,15 +203,27 @@ const FileUpload = () => {
               className="hidden"
             />
           </div>
+          
+          {/* Upload button - only show when files are selected */}
+          {hasSelectedFiles && (
+            <div className="mt-4 flex justify-end">
+              <Button 
+                onClick={uploadAllFiles}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Upload Files
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {files.length > 0 && (
         <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
           <CardHeader>
-            <CardTitle>Upload Progress</CardTitle>
+            <CardTitle>Files</CardTitle>
             <CardDescription>
-              {files.filter(f => f.status === 'success').length} of {files.length} files completed
+              {files.filter(f => f.status === 'success').length} of {files.length} files uploaded
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -180,6 +231,9 @@ const FileUpload = () => {
               {files.map(file => (
                 <div key={file.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
                   <div className="flex-shrink-0">
+                    {file.status === 'selected' && (
+                      <FileText className="w-5 h-5 text-gray-600" />
+                    )}
                     {file.status === 'uploading' && (
                       <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                     )}
@@ -205,6 +259,10 @@ const FileUpload = () => {
                     </div>
                     <p className="text-xs text-gray-600 mb-2">
                       {formatFileSize(file.size)}
+                      {file.status === 'selected' && ' - Ready to upload'}
+                      {file.status === 'uploading' && ' - Uploading...'}
+                      {file.status === 'success' && ' - Upload complete'}
+                      {file.status === 'error' && ` - ${file.error || 'Upload failed'}`}
                     </p>
                     {file.status === 'uploading' && (
                       <Progress value={file.progress} className="h-2" />
