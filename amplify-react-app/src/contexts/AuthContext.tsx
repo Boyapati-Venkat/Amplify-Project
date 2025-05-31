@@ -8,6 +8,7 @@ import {
   getCurrentUser, 
   fetchUserAttributes 
 } from 'aws-amplify/auth';
+import logger from '../utils/logger';
 
 interface User {
   id: string;
@@ -74,8 +75,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             name: attributes.name,
             isOnboarded: attributes['custom:isOnboarded'] === 'true'
           });
+          
+          logger.logAuthSuccess('Session Restored', {
+            userId: currentUser.userId,
+            hasEmail: !!attributes.email,
+            hasName: !!attributes.name
+          });
         } catch (attrError) {
-          console.error('Error fetching user attributes:', attrError);
+          logger.logAuthError('Fetch Attributes', attrError);
           setUser(null);
         }
       } catch (error) {
@@ -98,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError('');
     
     try {
-      console.log('Attempting to sign in with:', email);
+      logger.logAuthAttempt('Sign In', { email });
       
       const result = await amplifySignIn({
         username: email,
@@ -123,9 +130,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
           
           setUser(userData);
+          logger.logAuthSuccess('Sign In', userData);
           return true;
         } catch (userError) {
-          console.error('Error getting user data after sign in:', userError);
+          logger.logAuthError('Get User After Sign In', userError);
           setError('Failed to retrieve user information');
           return false;
         }
@@ -134,7 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
     } catch (error: any) {
-      console.error('Sign in error:', error);
+      logger.logAuthError('Sign In', error);
       setError(error.message || 'Authentication failed');
       return false;
     } finally {
@@ -151,7 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError('');
     
     try {
-      console.log('Attempting to sign up with:', email);
+      logger.logAuthAttempt('Sign Up', { email, name });
       
       const { isSignUpComplete, userId, nextStep } = await amplifySignUp({
         username: email,
@@ -182,20 +190,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const currentUser = await getCurrentUser();
           const attributes = await fetchUserAttributes();
           
-          setUser({
+          const userData = {
             id: currentUser.userId,
             email,
             name,
             isOnboarded: false
-          });
+          };
+          
+          setUser(userData);
+          logger.logAuthSuccess('Sign Up', userData);
         } catch (getUserError) {
-          console.error('Could not get user after sign up:', getUserError);
+          logger.logAuthError('Get User After Sign Up', getUserError);
         }
       }
       
       return { success: true, requiresConfirmation: false };
     } catch (error: any) {
-      console.error('Sign up error:', error);
+      logger.logAuthError('Sign Up', error);
       setError(error.message || 'Registration failed');
       return { success: false };
     } finally {
@@ -212,7 +223,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError('');
     
     try {
-      console.log('Confirming sign up for:', email, 'with code length:', code.length);
+      logger.logAuthAttempt('Confirm Sign Up', { email, codeLength: code.length });
       
       await confirmSignUp({
         username: email,
@@ -231,21 +242,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const attributes = await fetchUserAttributes();
         console.log('User attributes after auto sign-in:', attributes);
         
-        setUser({
+        const userData = {
           id: currentUser.userId,
           email: attributes.email || email,
           name: attributes.name || email.split('@')[0],
           isOnboarded: attributes['custom:isOnboarded'] === 'true'
-        });
+        };
+        
+        setUser(userData);
+        logger.logAuthSuccess('Confirm Sign Up', userData);
       } catch (autoSignInError) {
-        console.error('Auto sign-in failed:', autoSignInError);
+        logger.logAuthError('Auto Sign In', autoSignInError);
         setError('Account confirmed but automatic sign-in failed. Please sign in manually.');
       }
       
       setConfirmationRequired(null);
       return true;
     } catch (error: any) {
-      console.error('Confirmation error:', error);
+      logger.logAuthError('Confirm Sign Up', error);
       setError(error.message || 'Failed to confirm sign up');
       return false;
     } finally {
@@ -263,8 +277,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await amplifySignOut();
       setUser(null);
       console.log('Sign out successful');
+      logger.logAuthSuccess('Sign Out', {});
     } catch (error) {
-      console.error('Error signing out:', error);
+      logger.logAuthError('Sign Out', error);
       setError('Failed to sign out');
     }
   };

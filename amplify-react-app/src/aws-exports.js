@@ -7,8 +7,8 @@ const awsconfig = {
   // Cognito
   aws_cognito_identity_pool_id: "us-east-1:37e188c7-2911-41de-b8a0-c81330069628",
   aws_cognito_region: "us-east-1",
-  aws_user_pools_id: "us-east-1_pMJOxMpv4",
-  aws_user_pools_web_client_id: "2jqokqi8to9m2nlpub2g8b7tjh",
+  aws_user_pools_id: "us-east-1_zj9I7C91c",
+  aws_user_pools_web_client_id: "5t8ab9d4djovqnas8neaetelsd",
   oauth: {},
 
   // AppSync
@@ -20,6 +20,14 @@ const awsconfig = {
   // S3 Storage
   aws_user_files_s3_bucket: "migrationplan-bucket-dev",
   aws_user_files_s3_bucket_region: "us-east-1",
+  
+  // Authentication configuration
+  Auth: {
+    // Support multiple authentication flows to ensure compatibility with Cognito app client settings
+    authenticationFlowType: 'USER_PASSWORD_AUTH',
+    // Enable detailed logging
+    logLevel: 'DEBUG'
+  }
 };
 
 export default awsconfig;

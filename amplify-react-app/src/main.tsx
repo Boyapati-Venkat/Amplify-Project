@@ -1,16 +1,22 @@
 import { createRoot } from "react-dom/client";
 import { Amplify } from 'aws-amplify';
+import { Hub } from 'aws-amplify/utils';
 import App from "./App.tsx";
 import "./index.css";
 import awsExports from './aws-exports.js';
 
 // Only configure Amplify in browser environment
 if (typeof window !== 'undefined') {
-  Amplify.configure({
-    ...awsExports,
-    Storage: {
-      region: awsExports.aws_user_files_s3_bucket_region,
-      bucket: awsExports.aws_user_files_s3_bucket,
+  // Configure Amplify with debug logging
+  Amplify.configure(awsExports);
+  
+  // Set up Hub listener for auth events
+  Hub.listen('auth', (data) => {
+    const { payload } = data;
+    console.log('Auth event:', payload.event);
+    
+    if (payload.event === 'signIn_failure' || payload.event === 'signUp_failure') {
+      console.error('Auth error:', payload.data);
     }
   });
 }
