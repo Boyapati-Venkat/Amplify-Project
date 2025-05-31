@@ -62,14 +62,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const checkAuth = async () => {
       try {
         const currentUser = await getCurrentUser();
-        const attributes = await fetchUserAttributes();
+        console.log('Current user found:', currentUser);
         
-        setUser({
-          id: currentUser.userId,
-          email: attributes.email || '',
-          name: attributes.name,
-          isOnboarded: attributes['custom:isOnboarded'] === 'true'
-        });
+        try {
+          const attributes = await fetchUserAttributes();
+          console.log('User attributes:', attributes);
+          
+          setUser({
+            id: currentUser.userId,
+            email: attributes.email || '',
+            name: attributes.name,
+            isOnboarded: attributes['custom:isOnboarded'] === 'true'
+          });
+        } catch (attrError) {
+          console.error('Error fetching user attributes:', attrError);
+          setUser(null);
+        }
       } catch (error) {
         console.log('No current user signed in');
         setUser(null);
@@ -90,32 +98,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError('');
     
     try {
-      console.log('Signing in with email as username:', email);
-      // Use email as the username since Cognito is configured to use email as login
+      console.log('Attempting to sign in with:', email);
+      
       const result = await amplifySignIn({
-        username: email, // Email is used as username
+        username: email,
         password
       });
       
       console.log('Sign in result:', result);
       
       if (result.isSignedIn) {
-        // Get user attributes after sign in
-        const currentUser = await getCurrentUser();
-        const attributes = await fetchUserAttributes();
-        
-        const userData = {
-          id: currentUser.userId,
-          email: attributes.email || email, // Ensure email is set correctly
-          name: attributes.name || email.split('@')[0],
-          isOnboarded: attributes['custom:isOnboarded'] === 'true'
-        };
-        
-        setUser(userData);
-        return true;
+        try {
+          const currentUser = await getCurrentUser();
+          console.log('User after sign in:', currentUser);
+          
+          const attributes = await fetchUserAttributes();
+          console.log('User attributes after sign in:', attributes);
+          
+          const userData = {
+            id: currentUser.userId,
+            email: attributes.email || email,
+            name: attributes.name || email.split('@')[0],
+            isOnboarded: attributes['custom:isOnboarded'] === 'true'
+          };
+          
+          setUser(userData);
+          return true;
+        } catch (userError) {
+          console.error('Error getting user data after sign in:', userError);
+          setError('Failed to retrieve user information');
+          return false;
+        }
+      } else {
+        setError('Sign in was not completed');
+        return false;
       }
-      
-      return false;
     } catch (error: any) {
       console.error('Sign in error:', error);
       setError(error.message || 'Authentication failed');
@@ -134,24 +151,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError('');
     
     try {
-      console.log('Signing up with email as username:', email);
-      // Use email as both username and email attribute
+      console.log('Attempting to sign up with:', email);
+      
       const { isSignUpComplete, userId, nextStep } = await amplifySignUp({
-        username: email, // Email is used as username
+        username: email,
         password,
         options: {
           userAttributes: {
-            email: email, // Explicitly set email attribute
+            email,
             name,
             'custom:isOnboarded': 'false'
-          }
+          },
+          autoSignIn: true
         }
       });
       
-      console.log('Sign up result:', { isSignUpComplete, nextStep });
+      console.log('Sign up result:', { isSignUpComplete, userId, nextStep });
       
       if (nextStep.signUpStep === 'CONFIRM_SIGN_UP') {
-        // Handle confirmation code flow
         setConfirmationRequired({
           email,
           password,
@@ -160,22 +177,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: true, requiresConfirmation: true };
       }
       
-      // If auto sign-in is enabled and sign up is complete
       if (isSignUpComplete) {
         try {
           const currentUser = await getCurrentUser();
           const attributes = await fetchUserAttributes();
           
-          const userData = {
+          setUser({
             id: currentUser.userId,
-            email: email,
-            name: name,
+            email,
+            name,
             isOnboarded: false
-          };
-          
-          setUser(userData);
+          });
         } catch (getUserError) {
-          console.log('Could not get user after sign up:', getUserError);
+          console.error('Could not get user after sign up:', getUserError);
         }
       }
       
@@ -198,26 +212,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError('');
     
     try {
+      console.log('Confirming sign up for:', email, 'with code length:', code.length);
+      
       await confirmSignUp({
-        username: email, // Use email as username
+        username: email,
         confirmationCode: code
       });
       
-      // Try auto sign-in after confirmation
+      console.log('Confirmation successful, attempting auto sign-in');
+      
       try {
         await autoSignIn();
-        // Check if user is signed in
+        console.log('Auto sign-in successful');
+        
         const currentUser = await getCurrentUser();
+        console.log('Current user after auto sign-in:', currentUser);
+        
         const attributes = await fetchUserAttributes();
+        console.log('User attributes after auto sign-in:', attributes);
         
         setUser({
           id: currentUser.userId,
-          email: attributes.email || email, // Ensure email is set correctly
+          email: attributes.email || email,
           name: attributes.name || email.split('@')[0],
           isOnboarded: attributes['custom:isOnboarded'] === 'true'
         });
       } catch (autoSignInError) {
-        console.log('Auto sign-in failed, user needs to sign in manually');
+        console.error('Auto sign-in failed:', autoSignInError);
+        setError('Account confirmed but automatic sign-in failed. Please sign in manually.');
       }
       
       setConfirmationRequired(null);
@@ -237,10 +259,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      console.log('Signing out');
       await amplifySignOut();
       setUser(null);
+      console.log('Sign out successful');
     } catch (error) {
       console.error('Error signing out:', error);
+      setError('Failed to sign out');
     }
   };
 
@@ -248,7 +273,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user) {
       const updatedUser = { ...user, ...updates };
       setUser(updatedUser);
-      // Note: To persist these changes to Cognito, you would need to use Auth.updateUserAttributes
     }
   };
 

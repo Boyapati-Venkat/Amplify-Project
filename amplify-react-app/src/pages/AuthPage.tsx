@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Home, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const AuthPage = () => {
   const [email, setEmail] = useState('');
@@ -19,6 +19,7 @@ const AuthPage = () => {
   const [currentTab, setCurrentTab] = useState('signin');
   
   const { signIn, signUp, confirmSignUpWithCode, user, isLoading, error, clearError } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   // Redirect if already authenticated
@@ -36,29 +37,96 @@ const AuthPage = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const success = await signIn(email, password);
-    if (success) {
-      navigate('/dashboard');
+    try {
+      console.log('Attempting sign in with:', email);
+      const success = await signIn(email, password);
+      
+      if (success) {
+        toast({
+          title: "Sign in successful",
+          description: "Welcome back!",
+        });
+        navigate('/dashboard');
+      } else {
+        toast({
+          title: "Sign in failed",
+          description: error || "Please check your credentials and try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (err: any) {
+      console.error('Sign in error in component:', err);
+      toast({
+        title: "Authentication Error",
+        description: err.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
     }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const { success, requiresConfirmation } = await signUp(email, password, name);
-    if (success && requiresConfirmation) {
-      setNeedsConfirmation(true);
-    } else if (success) {
-      navigate('/onboarding');
+    try {
+      console.log('Attempting sign up with:', email);
+      const { success, requiresConfirmation } = await signUp(email, password, name);
+      
+      if (success && requiresConfirmation) {
+        toast({
+          title: "Verification required",
+          description: "Please check your email for a verification code",
+        });
+        setNeedsConfirmation(true);
+      } else if (success) {
+        toast({
+          title: "Account created",
+          description: "Your account has been created successfully!",
+        });
+        navigate('/onboarding');
+      } else {
+        toast({
+          title: "Sign up failed",
+          description: error || "Please check your information and try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (err: any) {
+      console.error('Sign up error in component:', err);
+      toast({
+        title: "Registration Error",
+        description: err.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
     }
   };
 
   const handleConfirmation = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const confirmed = await confirmSignUpWithCode(email, confirmationCode);
-    if (confirmed) {
-      navigate('/onboarding');
+    try {
+      console.log('Attempting confirmation with code:', confirmationCode);
+      const confirmed = await confirmSignUpWithCode(email, confirmationCode);
+      
+      if (confirmed) {
+        toast({
+          title: "Account verified",
+          description: "Your account has been verified successfully!",
+        });
+        navigate('/onboarding');
+      } else {
+        toast({
+          title: "Verification failed",
+          description: error || "Please check your code and try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (err: any) {
+      console.error('Confirmation error in component:', err);
+      toast({
+        title: "Verification Error",
+        description: err.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
     }
   };
 
