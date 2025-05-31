@@ -1,5 +1,14 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { signIn as amplifySignIn, signUp as amplifySignUp, signOut as amplifySignOut, getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth';
+import { 
+  signIn as amplifySignIn, 
+  signUp as amplifySignUp, 
+  signOut as amplifySignOut, 
+  confirmSignUp,
+  autoSignIn,
+  getCurrentUser, 
+  fetchUserAttributes 
+} from 'aws-amplify/auth';
 
 interface User {
   id: string;
@@ -8,13 +17,23 @@ interface User {
   isOnboarded?: boolean;
 }
 
+interface ConfirmationData {
+  email: string;
+  password: string;
+  name: string;
+}
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<void>;
+  error: string;
+  confirmationRequired: ConfirmationData | null;
+  signIn: (email: string, password: string) => Promise<boolean>;
+  signUp: (email: string, password: string, name: string) => Promise<{ success: boolean; requiresConfirmation?: boolean }>;
   signOut: () => Promise<void>;
+  confirmSignUpWithCode: (email: string, code: string) => Promise<boolean>;
   updateUser: (updates: Partial<User>) => void;
+  clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,6 +49,8 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [confirmationRequired, setConfirmationRequired] = useState<ConfirmationData | null>(null);
 
   useEffect(() => {
     // Only check auth in browser environment
@@ -61,70 +82,123 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuth();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<boolean> => {
     if (typeof window === 'undefined') {
       throw new Error('Authentication not available during build');
     }
 
     setIsLoading(true);
+    setError('');
+    
     try {
-      await amplifySignIn({ username: email, password });
+      console.log('Signing in with:', email);
+      const result = await amplifySignIn({
+        username: email,
+        password
+      });
       
-      // Get user attributes after sign in
-      const currentUser = await getCurrentUser();
-      const attributes = await fetchUserAttributes();
+      console.log('Sign in result:', result);
       
-      const userData = {
-        id: currentUser.userId,
-        email: attributes.email || '',
-        name: attributes.name,
-        isOnboarded: attributes['custom:isOnboarded'] === 'true'
-      };
+      if (result.isSignedIn) {
+        const currentUser = await getCurrentUser();
+        const attributes = await fetchUserAttributes();
+        
+        setUser({
+          id: currentUser.userId,
+          email: attributes.email || email,
+          name: attributes.name || email.split('@')[0],
+          isOnboarded: attributes['custom:isOnboarded'] === 'true'
+        });
+        
+        return true;
+      }
       
-      setUser(userData);
-    } catch (error) {
-      console.error('Error signing in:', error);
-      throw new Error('Authentication failed');
+      return false;
+    } catch (error: any) {
+      console.error('Sign in error:', error);
+      setError(error.message || 'Failed to sign in');
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = async (email: string, password: string, name: string): Promise<{ success: boolean; requiresConfirmation?: boolean }> => {
     if (typeof window === 'undefined') {
       throw new Error('Authentication not available during build');
     }
 
     setIsLoading(true);
+    setError('');
+    
     try {
-      await amplifySignUp({
+      console.log('Signing up with:', email);
+      const { isSignUpComplete, userId, nextStep } = await amplifySignUp({
         username: email,
         password,
         options: {
           userAttributes: {
             email,
-            name,
-            'custom:isOnboarded': 'false'
-          },
-          autoSignIn: true
+            name
+          }
         }
       });
       
-      // Auto sign in will happen, so we need to get the user
-      const currentUser = await getCurrentUser();
-      const attributes = await fetchUserAttributes();
+      console.log('Sign up result:', { isSignUpComplete, nextStep });
       
-      const userData = {
-        id: currentUser.userId,
-        email: attributes.email || '',
-        name: attributes.name,
-        isOnboarded: false
-      };
+      if (nextStep.signUpStep === 'CONFIRM_SIGN_UP') {
+        // Handle confirmation code flow
+        setConfirmationRequired({
+          email,
+          password,
+          name
+        });
+        return { success: true, requiresConfirmation: true };
+      }
       
-      setUser(userData);
-    } catch (error) {
-      console.error('Error signing up:', error);
-      throw new Error('Registration failed');
+      return { success: true, requiresConfirmation: false };
+    } catch (error: any) {
+      console.error('Sign up error:', error);
+      setError(error.message || 'Failed to sign up');
+      return { success: false };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const confirmSignUpWithCode = async (email: string, code: string): Promise<boolean> => {
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      await confirmSignUp({
+        username: email,
+        confirmationCode: code
+      });
+      
+      // Try auto sign-in after confirmation
+      try {
+        await autoSignIn();
+        // Check if user is signed in
+        const currentUser = await getCurrentUser();
+        const attributes = await fetchUserAttributes();
+        
+        setUser({
+          id: currentUser.userId,
+          email: attributes.email || email,
+          name: attributes.name || email.split('@')[0],
+          isOnboarded: attributes['custom:isOnboarded'] === 'true'
+        });
+      } catch (autoSignInError) {
+        console.log('Auto sign-in failed, user needs to sign in manually');
+      }
+      
+      setConfirmationRequired(null);
+      return true;
+    } catch (error: any) {
+      console.error('Confirmation error:', error);
+      setError(error.message || 'Failed to confirm sign up');
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -151,14 +225,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const clearError = () => {
+    setError('');
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
       isLoading,
+      error,
+      confirmationRequired,
       signIn,
       signUp,
       signOut,
-      updateUser
+      confirmSignUpWithCode,
+      updateUser,
+      clearError
     }}>
       {children}
     </AuthContext.Provider>
