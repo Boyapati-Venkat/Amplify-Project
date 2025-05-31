@@ -47,10 +47,10 @@ const AuthPage = () => {
           description: "Welcome back!",
         });
         navigate('/dashboard');
-      } else {
+      } else if (error) {
         toast({
           title: "Sign in failed",
-          description: error || "Please check your credentials and try again.",
+          description: error,
           variant: "destructive",
         });
       }
@@ -83,10 +83,10 @@ const AuthPage = () => {
           description: "Your account has been created successfully!",
         });
         navigate('/onboarding');
-      } else {
+      } else if (error) {
         toast({
           title: "Sign up failed",
-          description: error || "Please check your information and try again.",
+          description: error,
           variant: "destructive",
         });
       }
@@ -113,10 +113,10 @@ const AuthPage = () => {
           description: "Your account has been verified successfully!",
         });
         navigate('/onboarding');
-      } else {
+      } else if (error) {
         toast({
           title: "Verification failed",
-          description: error || "Please check your code and try again.",
+          description: error,
           variant: "destructive",
         });
       }

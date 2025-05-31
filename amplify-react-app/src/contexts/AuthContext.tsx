@@ -105,6 +105,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError('');
     
     try {
+      // Check if a user is already signed in
+      try {
+        const currentUser = await getCurrentUser();
+        // If we get here, a user is already signed in
+        console.log('User already signed in:', currentUser);
+        
+        // If the current user is the same as the one trying to sign in, return success
+        const attributes = await fetchUserAttributes();
+        if (attributes.email === email) {
+          const userData = {
+            id: currentUser.userId,
+            email: attributes.email,
+            name: attributes.name || email.split('@')[0],
+            isOnboarded: false
+          };
+          
+          setUser(userData);
+          logger.logAuthSuccess('Already Signed In', userData);
+          return true;
+        }
+        
+        // If it's a different user, sign out first
+        console.log('Different user trying to sign in, signing out current user');
+        await amplifySignOut();
+      } catch (e) {
+        // No user is signed in, continue with sign in
+        console.log('No user currently signed in, proceeding with sign in');
+      }
+      
       logger.logAuthAttempt('Sign In', { email });
       
       const result = await amplifySignIn({
@@ -142,6 +171,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
     } catch (error: any) {
+      // If the error is because user is already authenticated
+      if (error.message && error.message.includes('There is already a signed in user')) {
+        try {
+          const currentUser = await getCurrentUser();
+          const attributes = await fetchUserAttributes();
+          
+          const userData = {
+            id: currentUser.userId,
+            email: attributes.email || '',
+            name: attributes.name || email.split('@')[0],
+            isOnboarded: false
+          };
+          
+          setUser(userData);
+          logger.logAuthSuccess('Already Authenticated', userData);
+          return true;
+        } catch (e) {
+          logger.logAuthError('Get User After Already Authenticated Error', e);
+          setError('Error retrieving current user information');
+          return false;
+        }
+      }
+      
       logger.logAuthError('Sign In', error);
       setError(error.message || 'Authentication failed');
       return false;
@@ -207,7 +259,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: true, requiresConfirmation: false };
     } catch (error: any) {
       logger.logAuthError('Sign Up', error);
-      setError(error.message || 'Registration failed');
+      
+      // Check for specific error types and set user-friendly messages
+      if (error.message && error.message.includes('User already exists')) {
+        setError('An account with this email already exists. Please sign in instead.');
+      } else if (error.message && error.message.includes('Password did not conform')) {
+        setError('Password must be at least 8 characters and include uppercase, lowercase, numbers, and special characters.');
+      } else {
+        setError(error.message || 'Registration failed');
+      }
+      
       return { success: false };
     } finally {
       setIsLoading(false);
@@ -251,7 +312,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         setUser(userData);
         logger.logAuthSuccess('Confirm Sign Up', userData);
-      } catch (autoSignInError) {
+      } catch (autoSignInError: any) {
+        // If it's an identity pool error, still consider the login successful
+        if (autoSignInError.message && autoSignInError.message.includes('Invalid identity pool configuration')) {
+          console.log('Identity pool error, but user is authenticated');
+          
+          try {
+            const currentUser = await getCurrentUser();
+            const attributes = await fetchUserAttributes();
+            
+            setUser({
+              id: currentUser.userId,
+              email: attributes.email || email,
+              name: attributes.name || email.split('@')[0],
+              isOnboarded: false
+            });
+            
+            return true;
+          } catch (e) {
+            logger.logAuthError('Get User After Identity Pool Error', e);
+          }
+        }
+        
         logger.logAuthError('Auto Sign In', autoSignInError);
         setError('Account confirmed but automatic sign-in failed. Please sign in manually.');
       }
@@ -260,7 +342,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return true;
     } catch (error: any) {
       logger.logAuthError('Confirm Sign Up', error);
-      setError(error.message || 'Failed to confirm sign up');
+      
+      // Check for specific error types and set user-friendly messages
+      if (error.message && error.message.includes('Invalid verification code')) {
+        setError('The verification code you entered is incorrect. Please try again.');
+      } else if (error.message && error.message.includes('expired')) {
+        setError('The verification code has expired. Please request a new code.');
+      } else {
+        setError(error.message || 'Failed to confirm sign up');
+      }
+      
       return false;
     } finally {
       setIsLoading(false);
