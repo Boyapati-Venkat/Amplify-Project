@@ -6,7 +6,8 @@ import {
   confirmSignUp,
   autoSignIn,
   getCurrentUser, 
-  fetchUserAttributes 
+  fetchUserAttributes,
+  confirmSignIn
 } from 'aws-amplify/auth';
 import logger from '../utils/logger';
 
@@ -23,15 +24,22 @@ interface ConfirmationData {
   name: string;
 }
 
+interface PasswordChangeData {
+  email: string;
+  challengeResponse: any;
+}
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   error: string;
   confirmationRequired: ConfirmationData | null;
+  passwordChangeRequired: PasswordChangeData | null;
   signIn: (email: string, password: string) => Promise<boolean>;
   signUp: (email: string, password: string, name: string) => Promise<{ success: boolean; requiresConfirmation?: boolean }>;
   signOut: () => Promise<void>;
   confirmSignUpWithCode: (email: string, code: string) => Promise<boolean>;
+  completeNewPasswordChallenge: (newPassword: string) => Promise<boolean>;
   updateUser: (updates: Partial<User>) => void;
   clearError: () => void;
 }
@@ -51,6 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [confirmationRequired, setConfirmationRequired] = useState<ConfirmationData | null>(null);
+  const [passwordChangeRequired, setPasswordChangeRequired] = useState<PasswordChangeData | null>(null);
 
   useEffect(() => {
     // Only check auth in browser environment
@@ -166,6 +175,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setError('Failed to retrieve user information');
           return false;
         }
+      } else if (result.nextStep.signInStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+        // Handle password change requirement
+        setPasswordChangeRequired({
+          email,
+          challengeResponse: result
+        });
+        setError('You need to change your password before continuing.');
+        return false;
       } else {
         setError('Sign in was not completed');
         return false;
@@ -195,7 +212,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       logger.logAuthError('Sign In', error);
-      setError(error.message || 'Authentication failed');
+      
+      // Set user-friendly error messages
+      if (error.message && error.message.includes('Incorrect username or password')) {
+        setError('Incorrect email or password. Please try again.');
+      } else if (error.message && error.message.includes('User does not exist')) {
+        setError('No account found with this email. Please sign up first.');
+      } else {
+        setError(error.message || 'Authentication failed');
+      }
+      
       return false;
     } finally {
       setIsLoading(false);
@@ -260,11 +286,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       logger.logAuthError('Sign Up', error);
       
-      // Check for specific error types and set user-friendly messages
+      // Set user-friendly error messages
       if (error.message && error.message.includes('User already exists')) {
         setError('An account with this email already exists. Please sign in instead.');
-      } else if (error.message && error.message.includes('Password did not conform')) {
-        setError('Password must be at least 8 characters and include uppercase, lowercase, numbers, and special characters.');
+      } else if (error.message && error.message.includes('Password not long enough')) {
+        setError('Password must be at least 8 characters long.');
+      } else if (error.message && error.message.includes('password policy')) {
+        setError('Password must include uppercase, lowercase, numbers, and special characters.');
       } else {
         setError(error.message || 'Registration failed');
       }
@@ -343,13 +371,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       logger.logAuthError('Confirm Sign Up', error);
       
-      // Check for specific error types and set user-friendly messages
+      // Set user-friendly error messages
       if (error.message && error.message.includes('Invalid verification code')) {
         setError('The verification code you entered is incorrect. Please try again.');
       } else if (error.message && error.message.includes('expired')) {
         setError('The verification code has expired. Please request a new code.');
       } else {
         setError(error.message || 'Failed to confirm sign up');
+      }
+      
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const completeNewPasswordChallenge = async (newPassword: string): Promise<boolean> => {
+    if (!passwordChangeRequired) {
+      setError('No password change in progress');
+      return false;
+    }
+    
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      logger.logAuthAttempt('Complete Password Challenge', { email: passwordChangeRequired.email });
+      
+      const { isSignedIn, nextStep } = await confirmSignIn({
+        challengeResponse: newPassword
+      });
+      
+      if (isSignedIn) {
+        const currentUser = await getCurrentUser();
+        const attributes = await fetchUserAttributes();
+        
+        setUser({
+          id: currentUser.userId,
+          email: attributes.email || passwordChangeRequired.email,
+          name: attributes.name || passwordChangeRequired.email.split('@')[0],
+          isOnboarded: false
+        });
+        
+        setPasswordChangeRequired(null);
+        return true;
+      } else {
+        setError('Failed to complete password change');
+        return false;
+      }
+    } catch (error: any) {
+      logger.logAuthError('Complete Password Challenge', error);
+      
+      // Set user-friendly error messages
+      if (error.message && error.message.includes('Password not long enough')) {
+        setError('New password must be at least 8 characters long.');
+      } else if (error.message && error.message.includes('password policy')) {
+        setError('New password must include uppercase, lowercase, numbers, and special characters.');
+      } else {
+        setError(error.message || 'Failed to change password');
       }
       
       return false;
@@ -392,10 +471,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isLoading,
       error,
       confirmationRequired,
+      passwordChangeRequired,
       signIn,
       signUp,
       signOut,
       confirmSignUpWithCode,
+      completeNewPasswordChallenge,
       updateUser,
       clearError
     }}>

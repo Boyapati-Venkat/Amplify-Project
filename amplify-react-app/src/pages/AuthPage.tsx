@@ -9,6 +9,7 @@ import { Home, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import NewPasswordForm from '../components/NewPasswordForm';
 
 const AuthPage = () => {
   const [email, setEmail] = useState('');
@@ -18,7 +19,7 @@ const AuthPage = () => {
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [currentTab, setCurrentTab] = useState('signin');
   
-  const { signIn, signUp, confirmSignUpWithCode, user, isLoading, error, clearError } = useAuth();
+  const { signIn, signUp, confirmSignUpWithCode, passwordChangeRequired, user, isLoading, error, clearError } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -56,9 +57,17 @@ const AuthPage = () => {
       }
     } catch (err: any) {
       console.error('Sign in error in component:', err);
+      
+      // Display specific error messages
+      let errorMessage = err.message || "An unexpected error occurred";
+      
+      if (errorMessage.includes("incorrect username or password")) {
+        errorMessage = "Incorrect email or password. Please try again.";
+      }
+      
       toast({
         title: "Authentication Error",
-        description: err.message || "An unexpected error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -92,9 +101,21 @@ const AuthPage = () => {
       }
     } catch (err: any) {
       console.error('Sign up error in component:', err);
+      
+      // Display specific error messages
+      let errorMessage = err.message || "An unexpected error occurred";
+      
+      if (errorMessage.includes("Password not long enough")) {
+        errorMessage = "Password must be at least 8 characters long";
+      } else if (errorMessage.includes("User already exists")) {
+        errorMessage = "An account with this email already exists. Please sign in instead.";
+      } else if (errorMessage.includes("password policy")) {
+        errorMessage = "Password must include uppercase, lowercase, numbers, and special characters";
+      }
+      
       toast({
         title: "Registration Error",
-        description: err.message || "An unexpected error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -122,9 +143,19 @@ const AuthPage = () => {
       }
     } catch (err: any) {
       console.error('Confirmation error in component:', err);
+      
+      // Display specific error messages
+      let errorMessage = err.message || "An unexpected error occurred";
+      
+      if (errorMessage.includes("Invalid verification code")) {
+        errorMessage = "The verification code you entered is incorrect. Please try again.";
+      } else if (errorMessage.includes("expired")) {
+        errorMessage = "The verification code has expired. Please request a new code.";
+      }
+      
       toast({
         title: "Verification Error",
-        description: err.message || "An unexpected error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -139,6 +170,29 @@ const AuthPage = () => {
     setConfirmationCode('');
     clearError();
   };
+
+  // Render password change form if needed
+  if (passwordChangeRequired) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <nav className="px-6 py-4 flex items-center justify-between">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={handleHomeClick}
+            className="hover:bg-gray-100"
+          >
+            <Home className="h-5 w-5" />
+          </Button>
+          <div></div>
+        </nav>
+
+        <div className="flex items-center justify-center px-6 py-12">
+          <NewPasswordForm />
+        </div>
+      </div>
+    );
+  }
 
   // Render confirmation form if needed
   if (needsConfirmation) {
@@ -302,6 +356,9 @@ const AuthPage = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                     />
+                    <p className="text-xs text-gray-500">
+                      Password must be at least 8 characters and include uppercase, lowercase, numbers, and special characters.
+                    </p>
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? 'Creating account...' : 'Sign Up'}
