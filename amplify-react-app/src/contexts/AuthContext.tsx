@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   signIn as amplifySignIn, 
@@ -107,7 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         const userData = {
           id: currentUser.userId,
-          email: email, // Ensure email is set correctly
+          email: attributes.email || email, // Ensure email is set correctly
           name: attributes.name || email.split('@')[0],
           isOnboarded: attributes['custom:isOnboarded'] === 'true'
         };
@@ -191,6 +190,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const confirmSignUpWithCode = async (email: string, code: string): Promise<boolean> => {
+    if (typeof window === 'undefined') {
+      throw new Error('Authentication not available during build');
+    }
+    
     setIsLoading(true);
     setError('');
     
@@ -209,7 +212,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         setUser({
           id: currentUser.userId,
-          email: email, // Ensure email is set correctly
+          email: attributes.email || email, // Ensure email is set correctly
           name: attributes.name || email.split('@')[0],
           isOnboarded: attributes['custom:isOnboarded'] === 'true'
         });

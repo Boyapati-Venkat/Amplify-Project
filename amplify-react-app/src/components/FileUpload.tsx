@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,6 +34,9 @@ const FileUpload = () => {
   };
 
   const handleFiles = (fileList: File[]) => {
+    // Check for browser environment
+    if (typeof window === 'undefined') return;
+    
     const csvFiles = fileList.filter(file => file.type === 'text/csv' || file.name.endsWith('.csv'));
     
     if (csvFiles.length !== fileList.length) {
@@ -69,6 +71,9 @@ const FileUpload = () => {
   };
 
   const simulateUpload = (fileId: string) => {
+    // Check for browser environment
+    if (typeof window === 'undefined') return;
+    
     const interval = setInterval(() => {
       setFiles(prev => prev.map(file => {
         if (file.id === fileId) {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { BarChart3, Search, Download, Filter, RefreshCw } from 'lucide-react';
+import { generateClient } from 'aws-amplify/api';
 
 interface TransformedRecord {
   id: string;
@@ -22,6 +22,9 @@ const DataViewer = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  
+  // Initialize client conditionally
+  const client = typeof window !== 'undefined' ? generateClient() : null;
 
   // Mock data for demonstration
   useEffect(() => {
@@ -76,6 +79,11 @@ const DataViewer = () => {
   }, [searchTerm, records]);
 
   const handleRefresh = async () => {
+    // Check for browser environment
+    if (typeof window === 'undefined' || !client) {
+      return;
+    }
+    
     setIsLoading(true);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -88,6 +96,11 @@ const DataViewer = () => {
   };
 
   const handleExport = () => {
+    // Check for browser environment
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
     const csvContent = [
       ['Name', 'Email', 'Score', 'Created At'],
       ...filteredRecords.map(record => [
