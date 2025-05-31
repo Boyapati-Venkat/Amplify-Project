@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowRight, Upload, TrendingUp, Shield, Zap, Users, Home } from 'lucide-react';
+import { ArrowRight, Upload, TrendingUp, Shield, Zap, Users, Home, FileSearch, Brain, GitBranch, DollarSign, CheckCircle, Download } from 'lucide-react';
 import Logo from '../components/Logo';
 
 const LandingPage = () => {
@@ -11,29 +11,34 @@ const LandingPage = () => {
 
   const features = [
     {
-      icon: Upload,
-      title: 'Easy CSV Upload',
-      description: 'Drag and drop your CSV files with secure cloud storage'
+      icon: FileSearch,
+      title: 'CSV-Based Discovery',
+      description: 'Upload your on-prem inventory for analysis.'
     },
     {
-      icon: TrendingUp,
-      title: 'Migration Analysis',
-      description: 'Automatic data transformation and validation for migrations'
+      icon: Brain,
+      title: 'AI-Powered Assessment',
+      description: 'Get intelligent insights based on workload, size, and usage patterns.'
     },
     {
-      icon: Shield,
-      title: 'Enterprise Security',
-      description: 'Bank-grade security with user-specific data isolation'
+      icon: GitBranch,
+      title: 'Migration Strategy Generation',
+      description: 'Automatically generate a 6-hour cloud migration plan.'
     },
     {
-      icon: Zap,
-      title: 'Lightning Fast',
-      description: 'Process thousands of records in seconds'
+      icon: DollarSign,
+      title: 'Cost and Risk Estimation',
+      description: 'Estimate migration effort, downtime risk, and cost implications.'
     },
     {
-      icon: Users,
-      title: 'Team Collaboration',
-      description: 'Share insights and work together on migration projects'
+      icon: CheckCircle,
+      title: 'Cloud Compatibility Validation',
+      description: 'Validate each on-prem server for AWS/GCP/Azure compatibility.'
+    },
+    {
+      icon: Download,
+      title: 'Downloadable Migration Blueprint',
+      description: 'Export a migration-ready plan to share with your team.'
     }
   ];
 
@@ -106,7 +111,7 @@ const LandingPage = () => {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <Card key={index} className="group hover:shadow-lg transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm animate-slide-up" style={{ animationDelay: `${index * 0.1}s` }}>
                 <CardContent className="p-6">
