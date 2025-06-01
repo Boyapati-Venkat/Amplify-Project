@@ -29,13 +29,9 @@ const awsconfig = {
     logLevel: 'DEBUG'
   },
   
-  // Analytics configuration
-  Analytics: {
-    Pinpoint: {
-      appId: 'dec7d91eed684523853649c018062345',
-      region: 'us-east-1'
-    }
-  }
+  // Analytics configuration - Amplify v6 format
+  aws_mobile_analytics_app_id: 'dec7d91eed684523853649c018062345',
+  aws_mobile_analytics_app_region: 'us-east-1'
 };
 
 export default awsconfig;
