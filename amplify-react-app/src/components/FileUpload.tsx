@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, FileText, CheckCircle, AlertCircle, X } from 'lucide-react';
 import { uploadData } from 'aws-amplify/storage';
+import { FILE_UPLOAD_COMPLETE_EVENT } from './DataViewer';
 
 interface UploadedFile {
   id: string;
@@ -86,7 +87,7 @@ const FileUpload = () => {
 
       // Upload to S3
       const result = await uploadData({
-        key: `uploads/${fileToUpload.name}`,
+        key: `public/uploads/${fileToUpload.name}`,
         data: fileToUpload.file,
         options: {
           onProgress: (progress) => {
@@ -109,6 +110,9 @@ const FileUpload = () => {
         title: "Upload complete",
         description: `${fileToUpload.name} has been uploaded successfully.`,
       });
+
+      // Dispatch event to notify DataViewer to refresh
+      window.dispatchEvent(new Event(FILE_UPLOAD_COMPLETE_EVENT));
     } catch (error: any) {
       console.error('Upload error:', error);
       
