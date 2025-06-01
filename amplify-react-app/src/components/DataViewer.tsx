@@ -62,6 +62,7 @@ const DataViewer = () => {
     setIsLoading(true);
     
     try {
+      console.log("Attempting to fetch records from AppSync...");
       const response = await client.graphql({
         query: listTransformedRecords,
         variables: {
@@ -96,7 +97,43 @@ const DataViewer = () => {
 
   // Initial data fetch
   useEffect(() => {
-    fetchRecords();
+    // Check if AppSync endpoint is configured
+    if (awsconfig.aws_appsync_graphqlEndpoint.includes("YOUR_NEW_APPSYNC_ENDPOINT")) {
+      console.error("AppSync endpoint not properly configured in aws-exports.js");
+      toast({
+        title: "Configuration Error",
+        description: "The AppSync API endpoint is not properly configured. Please update aws-exports.js with the correct endpoint.",
+        variant: "destructive"
+      });
+      // Use mock data as fallback
+      const mockData: TransformedRecord[] = [
+        {
+          id: '1',
+          name: 'John Doe',
+          email: 'john@example.com',
+          score: 85,
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: '2',
+          name: 'Jane Smith',
+          email: 'jane@example.com',
+          score: 92,
+          createdAt: new Date(Date.now() - 86400000).toISOString()
+        },
+        {
+          id: '3',
+          name: 'Bob Johnson',
+          email: 'bob@example.com',
+          score: 78,
+          createdAt: new Date(Date.now() - 172800000).toISOString()
+        }
+      ];
+      setRecords(mockData);
+      setFilteredRecords(mockData);
+    } else {
+      fetchRecords();
+    }
   }, []);
 
   useEffect(() => {

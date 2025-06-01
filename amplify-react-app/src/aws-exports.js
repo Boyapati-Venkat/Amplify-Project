@@ -11,11 +11,11 @@ const awsconfig = {
   aws_user_pools_web_client_id: "5t8ab9d4djovqnas8neaetelsd",
   oauth: {},
 
-  // AppSync
-  aws_appsync_graphqlEndpoint: "https://ujomo3kkkvelblwouziiefuz4m.appsync-api.us-east-1.amazonaws.com/graphql",
+  // AppSync - Updated endpoint
+  aws_appsync_graphqlEndpoint: "https://hieoctj5jnhgfll65rkis2ksj4.appsync-api.us-east-1.amazonaws.com/graphql",
   aws_appsync_region: "us-east-1",
   aws_appsync_authenticationType: "AMAZON_COGNITO_USER_POOLS",
-  aws_appsync_apiKey: "da2-2duc5kmjkbgchdbckkfz5aq5bm",
+  aws_appsync_apiKey: "da2-2c4mlkjj6fggnotapjzebc54ai",
 
   // S3 Storage
   aws_user_files_s3_bucket: "migrationplan-bucket-dev",
@@ -34,7 +34,7 @@ const awsconfig = {
     disabled: false,
     autoSessionRecord: true,
     AWSPinpoint: {
-      appId: 'dec7d91eed684523853649c018062345',
+      appId: 'b6eecfff46cc4afcb14fbef0f2dd8aec',
       region: 'us-east-1'
     }
   }
