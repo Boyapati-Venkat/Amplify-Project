@@ -1,4 +1,13 @@
-import { record } from 'aws-amplify/analytics';
+import { record, identifyUser, configureAutoTrack } from 'aws-amplify/analytics';
+
+// Configure auto-tracking for sessions
+if (typeof window !== 'undefined') {
+  configureAutoTrack({
+    enable: true,
+    type: 'session',
+    attributes: { platform: 'web' }
+  });
+}
 
 // Define event types for type safety
 export type AnalyticsEventType = 
@@ -35,15 +44,6 @@ export interface AnalyticsAttributes {
   navigationTarget?: string;
 }
 
-// Check if analytics is properly configured
-const isAnalyticsConfigured = () => {
-  // Check for End User Messaging App ID first, then fall back to Pinpoint for backward compatibility
-  const appId = import.meta.env.VITE_END_USER_MESSAGING_APP_ID || 
-                import.meta.env.VITE_PINPOINT_APP_ID || 
-                '';
-  return appId && appId !== '';
-};
-
 // Helper function to convert attributes to string format for AWS Amplify
 const convertAttributesToStrings = (attributes: AnalyticsAttributes): Record<string, string> => {
   const stringAttributes: Record<string, string> = {};
@@ -59,7 +59,7 @@ const convertAttributesToStrings = (attributes: AnalyticsAttributes): Record<str
 
 // Analytics utility class
 export class Analytics {
-  private static sessionId: string = this.generateSessionId();
+  private static sessionId: string = Analytics.generateSessionId();
 
   private static generateSessionId(): string {
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -80,17 +80,26 @@ export class Analytics {
 
       console.log(`📊 Analytics Event: ${eventType}`, enrichedAttributes);
 
-      // Only send to AWS if it's configured
-      if (isAnalyticsConfigured()) {
-        await record({
-          name: eventType,
-          attributes: convertAttributesToStrings(enrichedAttributes),
-        });
-      } else {
-        console.log('📊 Analytics: AWS End User Messaging not configured, event logged locally only');
-      }
+      // Send to Pinpoint
+      await record({
+        name: eventType,
+        attributes: convertAttributesToStrings(enrichedAttributes),
+      });
     } catch (error) {
       console.error('Analytics tracking error:', error);
+    }
+  }
+
+  // Identify user for analytics
+  static async identifyUser(userId: string, userAttributes: Record<string, string> = {}): Promise<void> {
+    try {
+      await identifyUser({
+        userId,
+        userProfile: userAttributes
+      });
+      console.log('📊 User identified for analytics:', userId);
+    } catch (error) {
+      console.error('Failed to identify user for analytics:', error);
     }
   }
 
@@ -109,12 +118,29 @@ export class Analytics {
       username: name,
       planType: 'free',
     });
+    
+    // Also identify the user
+    if (email) {
+      await this.identifyUser(email, {
+        email,
+        name: name || '',
+        signupDate: new Date().toISOString()
+      });
+    }
   }
 
   static async trackUserSignin(email: string): Promise<void> {
     await this.trackEvent('user_signin', {
       email,
     });
+    
+    // Also identify the user
+    if (email) {
+      await this.identifyUser(email, {
+        email,
+        lastSignIn: new Date().toISOString()
+      });
+    }
   }
 
   static async trackStartTrial(planType: 'free' | 'premium' | 'enterprise' = 'free'): Promise<void> {

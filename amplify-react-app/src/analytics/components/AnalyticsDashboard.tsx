@@ -4,22 +4,23 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { AlertCircle, CheckCircle, Users, FileUp, Download, MessageSquare, TrendingUp, Activity, Database, Search } from 'lucide-react';
+import { AlertCircle, CheckCircle, Users, FileUp, Download, MessageSquare, TrendingUp, Activity, Database, Search, Home } from 'lucide-react';
 import { Analytics } from '../utils/analytics';
+import awsconfig from '../../aws-exports';
+import { useNavigate } from 'react-router-dom';
 
 const AnalyticsDashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
   
-  // Check if analytics is configured
-  const appId = import.meta.env.VITE_END_USER_MESSAGING_APP_ID || 
-                import.meta.env.VITE_PINPOINT_APP_ID || 
-                '';
-  const isConfigured = appId && appId !== '';
+  // Check if analytics is configured in aws-exports.js
+  const isPinpointConfigured = !!(
+    awsconfig.Analytics?.Pinpoint?.appId && 
+    awsconfig.Analytics.Pinpoint.appId !== ''
+  );
   
   // Service name for display
-  const serviceName = import.meta.env.VITE_END_USER_MESSAGING_APP_ID 
-    ? 'AWS End User Messaging' 
-    : 'Amazon Pinpoint';
+  const serviceName = 'Amazon Pinpoint';
 
   // Enhanced mock data for demonstration
   const mockAnalyticsData = [
@@ -73,6 +74,19 @@ const AnalyticsDashboard = () => {
 
   return (
     <div className="p-6 space-y-6 min-h-screen bg-gray-50">
+      {/* Navigation */}
+      <div className="flex justify-between items-center mb-4">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => navigate('/dashboard')}
+          className="flex items-center gap-2"
+        >
+          <Home className="h-4 w-4" />
+          Back to Dashboard
+        </Button>
+      </div>
+      
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
@@ -84,16 +98,16 @@ const AnalyticsDashboard = () => {
       </div>
 
       {/* Configuration Status */}
-      <Alert variant={isConfigured ? "default" : "destructive"}>
-        {isConfigured ? (
+      <Alert variant={isPinpointConfigured ? "default" : "destructive"}>
+        {isPinpointConfigured ? (
           <CheckCircle className="h-4 w-4" />
         ) : (
           <AlertCircle className="h-4 w-4" />
         )}
         <AlertDescription>
-          {isConfigured 
+          {isPinpointConfigured 
             ? `Analytics is properly configured and connected to ${serviceName}`
-            : "Analytics is running in demo mode. Configure AWS End User Messaging App ID to enable real tracking."
+            : "Analytics is running in demo mode. Configure Amazon Pinpoint in aws-exports.js to enable real tracking."
           }
         </AlertDescription>
       </Alert>
@@ -349,28 +363,29 @@ const AnalyticsDashboard = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <h4 className="font-semibold">1. Configure AWS End User Messaging</h4>
+            <h4 className="font-semibold">1. Configure Amazon Pinpoint</h4>
             <p className="text-sm text-gray-600">
-              Go to AWS Console → AWS End User Messaging → Create a new project and get your App ID
+              Go to AWS Console → Amazon Pinpoint → Create a project and get your Project ID
             </p>
           </div>
           <div className="space-y-2">
-            <h4 className="font-semibold">2. Set Environment Variable</h4>
+            <h4 className="font-semibold">2. Update aws-exports.js</h4>
             <p className="text-sm text-gray-600">
-              Create a .env file and add: VITE_END_USER_MESSAGING_APP_ID=your_actual_app_id
+              Add the Pinpoint configuration to aws-exports.js:
             </p>
+            <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto">
+{`Analytics: {
+  Pinpoint: {
+    appId: 'your-project-id',
+    region: 'us-east-1'
+  }
+}`}
+            </pre>
           </div>
           <div className="space-y-2">
             <h4 className="font-semibold">3. View Real-time Events</h4>
             <p className="text-sm text-gray-600">
-              Events will appear in AWS End User Messaging Console → Analytics → Events
-            </p>
-          </div>
-          <div className="space-y-2 pt-4 border-t border-gray-200">
-            <h4 className="font-semibold text-amber-600">Legacy Support Note</h4>
-            <p className="text-sm text-gray-600">
-              For backward compatibility, this system also supports Amazon Pinpoint via the VITE_PINPOINT_APP_ID environment variable, 
-              but AWS End User Messaging is recommended as Pinpoint is being deprecated.
+              Events will appear in Amazon Pinpoint Console → Analytics → Events
             </p>
           </div>
         </CardContent>
