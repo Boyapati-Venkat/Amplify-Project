@@ -72,7 +72,7 @@ const DataViewer = () => {
       const response = await client.graphql({
         query: listTransformedRecords,
         variables: {
-          limit: recordsPerPage,
+          limit: 10,
           nextToken: token !== undefined ? token : nextToken
         },
         authMode: 'userPool'

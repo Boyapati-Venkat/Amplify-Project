@@ -112,7 +112,7 @@ const FileUpload = () => {
       });
 
       // Dispatch event to notify DataViewer to refresh
-      window.dispatchEvent(new Event(FILE_UPLOAD_COMPLETE_EVENT));
+      window.dispatchEvent(new CustomEvent(FILE_UPLOAD_COMPLETE_EVENT));
     } catch (error: any) {
       console.error('Upload error:', error);
       
