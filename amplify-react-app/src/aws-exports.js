@@ -27,6 +27,14 @@ const awsconfig = {
     authenticationFlowType: 'USER_PASSWORD_AUTH',
     // Enable detailed logging
     logLevel: 'DEBUG'
+  },
+  
+  // Analytics configuration
+  Analytics: {
+    Pinpoint: {
+      appId: 'dec7d91eed684523853649c018062345',
+      region: 'us-east-1'
+    }
   }
 };
 
