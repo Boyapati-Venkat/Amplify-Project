@@ -2,11 +2,14 @@ import { record, identifyUser, configureAutoTrack } from 'aws-amplify/analytics'
 
 // Configure auto-tracking for sessions
 if (typeof window !== 'undefined') {
-  configureAutoTrack({
-    enable: true,
-    type: 'session',
-    attributes: { platform: 'web' }
-  });
+  try {
+    configureAutoTrack({
+      enable: false // Disable auto-tracking to prevent the error
+    });
+    console.log('Analytics auto-tracking disabled');
+  } catch (error) {
+    console.error('Error configuring analytics:', error);
+  }
 }
 
 // Define event types for type safety
@@ -80,11 +83,15 @@ export class Analytics {
 
       console.log(`📊 Analytics Event: ${eventType}`, enrichedAttributes);
 
-      // Send to Pinpoint
-      await record({
-        name: eventType,
-        attributes: convertAttributesToStrings(enrichedAttributes),
-      });
+      // Try to send to Pinpoint, but don't fail if it doesn't work
+      try {
+        await record({
+          name: eventType,
+          attributes: convertAttributesToStrings(enrichedAttributes),
+        });
+      } catch (recordError) {
+        console.log('Analytics record failed, falling back to local logging only:', recordError);
+      }
     } catch (error) {
       console.error('Analytics tracking error:', error);
     }

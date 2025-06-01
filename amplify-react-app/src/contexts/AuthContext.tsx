@@ -10,6 +10,7 @@ import {
   confirmSignIn
 } from 'aws-amplify/auth';
 import logger from '../utils/logger';
+import { safeAmplifyCall } from '../utils/amplify-helpers';
 
 interface User {
   id: string;
@@ -145,10 +146,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       logger.logAuthAttempt('Sign In', { email });
       
-      const result = await amplifySignIn({
-        username: email,
-        password
-      });
+      // Use the safe call utility to ensure parameters are validated
+      const result = await safeAmplifyCall(
+        amplifySignIn,
+        {
+          username: email,
+          password
+        },
+        ['username', 'password']
+      );
       
       console.log('Sign in result:', result);
       
@@ -239,18 +245,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       logger.logAuthAttempt('Sign Up', { email, name });
       
-      const { isSignUpComplete, userId, nextStep } = await amplifySignUp({
-        username: email,
-        password,
-        options: {
-          userAttributes: {
-            email,
-            name
-            // Removed custom:isOnboarded attribute that was causing the error
-          },
-          autoSignIn: true
-        }
-      });
+      // Use the safe call utility to ensure parameters are validated
+      const { isSignUpComplete, userId, nextStep } = await safeAmplifyCall(
+        amplifySignUp,
+        {
+          username: email,
+          password,
+          options: {
+            userAttributes: {
+              email,
+              name
+              // Removed custom:isOnboarded attribute that was causing the error
+            },
+            autoSignIn: true
+          }
+        },
+        ['username', 'password']
+      );
       
       console.log('Sign up result:', { isSignUpComplete, userId, nextStep });
       
@@ -317,10 +328,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       logger.logAuthAttempt('Confirm Sign Up', { email, codeLength: code.length });
       
-      await confirmSignUp({
-        username: email,
-        confirmationCode: code
-      });
+      // Use the safe call utility to ensure parameters are validated
+      await safeAmplifyCall(
+        confirmSignUp,
+        {
+          username: email,
+          confirmationCode: code
+        },
+        ['username', 'confirmationCode']
+      );
       
       console.log('Confirmation successful, attempting auto sign-in');
       
@@ -401,9 +417,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       logger.logAuthAttempt('Complete Password Challenge', { email: passwordChangeRequired.email });
       
-      const { isSignedIn, nextStep } = await confirmSignIn({
-        challengeResponse: newPassword
-      });
+      // Use the safe call utility to ensure parameters are validated
+      const { isSignedIn, nextStep } = await safeAmplifyCall(
+        confirmSignIn,
+        {
+          challengeResponse: newPassword
+        },
+        ['challengeResponse']
+      );
       
       if (isSignedIn) {
         const currentUser = await getCurrentUser();
@@ -447,7 +468,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       console.log('Signing out');
-      await amplifySignOut();
+      // Use the safe call utility with amplifySignOut
+      await safeAmplifyCall(amplifySignOut, {}, []);
       setUser(null);
       console.log('Sign out successful');
       logger.logAuthSuccess('Sign Out', {});
