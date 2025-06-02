@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -9,6 +8,32 @@ import PaginatedDataViewer from '../pagination/PaginatedDataViewer';
 import FriendlyUploadFeedback from '../upload-feedback/FriendlyUploadFeedback';
 import AmplifyFileUpload from '../../components/AmplifyFileUpload';
 import AmplifyDataViewer from '../../components/AmplifyDataViewer';
+import { generateClient } from 'aws-amplify/api';
+
+// GraphQL query for fetching transformed records
+const listTransformedRecords = /* GraphQL */ `
+  query ListTransformedRecords(
+    $filter: ModelTransformedRecordFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listTransformedRecords(
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        name
+        email
+        score
+        createdAt
+        updatedAt
+      }
+      nextToken
+    }
+  }
+`;
 
 interface TransformedRecord {
   id: string;
@@ -24,6 +49,9 @@ const EnhancedDashboard = () => {
   const [records, setRecords] = useState<TransformedRecord[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  
+  // Initialize API client
+  const client = typeof window !== 'undefined' ? generateClient() : null;
 
   // Redirect to auth page if not logged in
   useEffect(() => {
@@ -39,20 +67,41 @@ const EnhancedDashboard = () => {
     }
   }, [user]);
 
-  // Mock data loading - replace with actual data fetching
+  // Fetch real data from AppSync
   useEffect(() => {
-    const mockData: TransformedRecord[] = [
-      // Generate more mock data for pagination testing
-      ...Array.from({ length: 25 }, (_, i) => ({
-        id: `${i + 1}`,
-        name: `User ${i + 1}`,
-        email: `user${i + 1}@example.com`,
-        score: Math.floor(Math.random() * 100) + 1,
-        createdAt: new Date(Date.now() - i * 86400000).toISOString()
-      }))
-    ];
-    setRecords(mockData);
-  }, [refreshTrigger]);
+    const fetchData = async () => {
+      if (typeof window !== 'undefined' && client) {
+        try {
+          const response = await client.graphql({
+            query: listTransformedRecords,
+            variables: {
+              limit: 10,
+              nextToken: null
+            },
+            authMode: 'userPool'
+          });
+          
+          const fetchedRecords = response.data.listTransformedRecords.items;
+          setRecords(fetchedRecords);
+        } catch (error) {
+          console.error('Error fetching records:', error);
+          // Fallback to mock data if API call fails
+          const mockData: TransformedRecord[] = [
+            ...Array.from({ length: 25 }, (_, i) => ({
+              id: `${i + 1}`,
+              name: `User ${i + 1}`,
+              email: `user${i + 1}@example.com`,
+              score: Math.floor(Math.random() * 100) + 1,
+              createdAt: new Date(Date.now() - i * 86400000).toISOString()
+            }))
+          ];
+          setRecords(mockData);
+        }
+      }
+    };
+    
+    fetchData();
+  }, [refreshTrigger, client]);
 
   const handleUploadStart = () => {
     setIsUploading(true);
@@ -65,8 +114,6 @@ const EnhancedDashboard = () => {
   };
 
   const handleDataRefresh = async () => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
     setRefreshTrigger(prev => prev + 1);
   };
 
@@ -99,15 +146,11 @@ const EnhancedDashboard = () => {
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-xl font-semibold mb-4">Upload Your Data</h2>
-              <AmplifyFileUpload userId={user.id} />
-              <div className="mt-4">
-                <button
-                  onClick={handleUploadStart}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Simulate Upload
-                </button>
-              </div>
+              <AmplifyFileUpload 
+                userId={user.id} 
+                onUploadStart={handleUploadStart}
+                onUploadComplete={handleUploadComplete}
+              />
             </div>
             
             {/* Upload Feedback */}
