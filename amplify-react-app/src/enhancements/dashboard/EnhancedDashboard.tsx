@@ -69,7 +69,7 @@ useEffect(() => {
 // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [user?.email]); // Only depend on user.email, not the entire user object
 
-// Fix the data fetching useEffect
+// Initial data load - runs only once when component mounts
 useEffect(() => {
   const fetchData = async () => {
     if (typeof window !== 'undefined' && client) {
@@ -104,7 +104,36 @@ useEffect(() => {
   
   fetchData();
 // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [refreshTrigger]); // Remove client from dependencies
+}, []); // Empty dependency array - runs only once
+
+// Separate effect that only runs when refreshTrigger changes (after file upload)
+useEffect(() => {
+  // Skip initial render
+  if (refreshTrigger === 0) return;
+  
+  const refreshData = async () => {
+    if (typeof window !== 'undefined' && client) {
+      try {
+        const response = await client.graphql({
+          query: listTransformedRecords,
+          variables: {
+            limit: 10,
+            nextToken: null
+          },
+          authMode: 'userPool'
+        });
+        
+        const fetchedRecords = response.data.listTransformedRecords.items;
+        setRecords(fetchedRecords);
+      } catch (error) {
+        console.error('Error refreshing records:', error);
+      }
+    }
+  };
+  
+  refreshData();
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, [refreshTrigger]);
 
   const handleUploadStart = () => {
     setIsUploading(true);
