@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { BarChart3, Search, Download, Filter, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { generateClient } from 'aws-amplify/api';
 import awsconfig from '../aws-exports';
+
 
 // GraphQL query for fetching transformed records
 const listTransformedRecords = /* GraphQL */ `
@@ -57,7 +58,7 @@ const DataViewer = () => {
   const { toast } = useToast();
   
   // Initialize client conditionally
-const client = React.useMemo(() => {
+const client = useMemo(() => {
   return typeof window !== 'undefined' ? generateClient() : null;
 }, []);
 
@@ -153,24 +154,26 @@ useEffect(() => {
 // eslint-disable-next-line react-hooks/exhaustive-deps
 }, []); // Empty dependency array to run only once
 
-  // Listen for file upload complete event
+ // Listen for file upload complete event
 useEffect(() => {
-    const handleFileUploadComplete = () => {
-      console.log("File upload complete event received, refreshing data...");
-      // Reset pagination and fetch fresh data
-      setPreviousTokens([]);
-      setCurrentPage(1);
-      fetchRecords(false, null);
-    };
+  const handleFileUploadComplete = () => {
+    console.log("File upload complete event received, refreshing data...");
+    // Reset pagination and fetch fresh data
+    setPreviousTokens([]);
+    setCurrentPage(1);
+    fetchRecords(false, null);
+  };
 
-    // Add event listener
-    window.addEventListener(FILE_UPLOAD_COMPLETE_EVENT, handleFileUploadComplete);
+  // Add event listener
+  window.addEventListener(FILE_UPLOAD_COMPLETE_EVENT, handleFileUploadComplete);
 
-    // Clean up
-    return () => {
-      window.removeEventListener(FILE_UPLOAD_COMPLETE_EVENT, handleFileUploadComplete);
-    };
-  }, [fetchRecords]);
+  // Clean up
+  return () => {
+    window.removeEventListener(FILE_UPLOAD_COMPLETE_EVENT, handleFileUploadComplete);
+  };
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, []); // Remove fetchRecords from dependencies
+
 
   useEffect(() => {
     const filtered = records.filter(record =>
