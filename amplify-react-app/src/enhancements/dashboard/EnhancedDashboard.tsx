@@ -53,55 +53,58 @@ const EnhancedDashboard = () => {
   // Initialize API client
   const client = typeof window !== 'undefined' ? generateClient() : null;
 
-  // Redirect to auth page if not logged in
-  useEffect(() => {
-    if (!isLoading && !user) {
-      navigate('/auth');
-    }
-  }, [user, isLoading, navigate]);
+  // Fix the authentication check useEffect
+useEffect(() => {
+  if (!isLoading && !user) {
+    navigate('/auth', { replace: true });
+  }
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, [isLoading, user]); // Remove navigate from dependencies
 
-  // Track dashboard visit
-  useEffect(() => {
-    if (user?.email) {
-      Analytics.trackDashboardVisit(user.email);
-    }
-  }, [user]);
+// Fix the analytics tracking useEffect
+useEffect(() => {
+  if (user?.email) {
+    Analytics.trackDashboardVisit(user.email);
+  }
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, [user?.email]); // Only depend on user.email, not the entire user object
 
-  // Fetch real data from AppSync
-  useEffect(() => {
-    const fetchData = async () => {
-      if (typeof window !== 'undefined' && client) {
-        try {
-          const response = await client.graphql({
-            query: listTransformedRecords,
-            variables: {
-              limit: 10,
-              nextToken: null
-            },
-            authMode: 'userPool'
-          });
-          
-          const fetchedRecords = response.data.listTransformedRecords.items;
-          setRecords(fetchedRecords);
-        } catch (error) {
-          console.error('Error fetching records:', error);
-          // Fallback to mock data if API call fails
-          const mockData: TransformedRecord[] = [
-            ...Array.from({ length: 25 }, (_, i) => ({
-              id: `${i + 1}`,
-              name: `User ${i + 1}`,
-              email: `user${i + 1}@example.com`,
-              score: Math.floor(Math.random() * 100) + 1,
-              createdAt: new Date(Date.now() - i * 86400000).toISOString()
-            }))
-          ];
-          setRecords(mockData);
-        }
+// Fix the data fetching useEffect
+useEffect(() => {
+  const fetchData = async () => {
+    if (typeof window !== 'undefined' && client) {
+      try {
+        const response = await client.graphql({
+          query: listTransformedRecords,
+          variables: {
+            limit: 10,
+            nextToken: null
+          },
+          authMode: 'userPool'
+        });
+        
+        const fetchedRecords = response.data.listTransformedRecords.items;
+        setRecords(fetchedRecords);
+      } catch (error) {
+        console.error('Error fetching records:', error);
+        // Fallback to mock data if API call fails
+        const mockData = [
+          ...Array.from({ length: 25 }, (_, i) => ({
+            id: `${i + 1}`,
+            name: `User ${i + 1}`,
+            email: `user${i + 1}@example.com`,
+            score: Math.floor(Math.random() * 100) + 1,
+            createdAt: new Date(Date.now() - i * 86400000).toISOString()
+          }))
+        ];
+        setRecords(mockData);
       }
-    };
-    
-    fetchData();
-  }, [refreshTrigger, client]);
+    }
+  };
+  
+  fetchData();
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, [refreshTrigger]); // Remove client from dependencies
 
   const handleUploadStart = () => {
     setIsUploading(true);
